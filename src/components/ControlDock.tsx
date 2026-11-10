@@ -1,11 +1,13 @@
 import React from 'react';
 import {
-  Activity,
   ChevronDown,
   ChevronUp,
   Eye,
+  Ghost,
   Layers,
   MapPin,
+  Pause,
+  Play,
   RotateCcw,
   RotateCw,
   ZoomIn,
@@ -20,8 +22,13 @@ interface ControlDockProps {
   onExplodeChange: (value: number) => void;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
+  transparentBody: boolean;
+  onToggleTransparentBody: () => void;
+  showTransparentToggle: boolean;
   animatePhysiology: boolean;
   onTogglePhysiology: () => void;
+  physiologySpeed: number;
+  onCycleSpeed: () => void;
   autoRotate: boolean;
   onToggleAutoRotate: () => void;
   showLabels: boolean;
@@ -39,8 +46,13 @@ export const ControlDock: React.FC<ControlDockProps> = ({
   onExplodeChange,
   viewMode,
   onViewModeChange,
+  transparentBody,
+  onToggleTransparentBody,
+  showTransparentToggle,
   animatePhysiology,
   onTogglePhysiology,
+  physiologySpeed,
+  onCycleSpeed,
   autoRotate,
   onToggleAutoRotate,
   showLabels,
@@ -52,19 +64,17 @@ export const ControlDock: React.FC<ControlDockProps> = ({
 }) => {
   return (
     <div
-      className={`fixed bottom-5 left-1/2 -translate-x-1/2 z-20 w-[min(940px,94vw)] transition-transform duration-300 ease-out ${
-        collapsed ? 'translate-y-[calc(100%+24px)]' : 'translate-y-0'
+      className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-20 w-[min(960px,95vw)] transition-transform duration-300 ease-out ${
+        collapsed ? 'translate-y-[calc(100%+20px)]' : 'translate-y-0'
       }`}
     >
-      {/* Collapse / Expand Toggle Attached to Top Edge */}
-      <div className="flex justify-center mb-2">
+      <div className="flex justify-center mb-1.5">
         <button
           type="button"
           onClick={onToggleCollapse}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#0f172a]/95 border border-slate-700/70 text-xs font-medium text-slate-300 hover:text-white hover:border-slate-500 transition-colors shadow-md whitespace-nowrap cursor-pointer ${
-            collapsed ? '-translate-y-[calc(100%+28px)]' : ''
+          className={`flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#0f172a]/95 border border-slate-700/70 text-xs font-medium text-slate-300 hover:text-white transition-colors shadow-md whitespace-nowrap cursor-pointer ${
+            collapsed ? '-translate-y-[calc(100%+24px)]' : ''
           }`}
-          aria-label={collapsed ? 'Show Controls' : 'Hide Controls'}
         >
           {collapsed ? (
             <>
@@ -80,16 +90,14 @@ export const ControlDock: React.FC<ControlDockProps> = ({
         </button>
       </div>
 
-      {/* Main Dock Surface (Solid/RGBA, no backdrop-blur over WebGL) */}
-      <div className="rounded-xl bg-[#0f172a]/94 border border-slate-700/70 shadow-2xl px-4 py-3 flex flex-col gap-3">
-        {/* Row 1: Exploded View + View Mode + Toggles */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          {/* Exploded View Slider */}
-          <div className="flex items-center gap-3 min-w-[200px] flex-1 max-w-xs">
-            <div className="flex items-center gap-1.5 text-xs font-medium text-slate-300 whitespace-nowrap">
+      <div className="rounded-xl bg-[#0f172a]/94 border border-slate-700/70 shadow-2xl px-3.5 py-2.5 flex flex-col gap-2.5">
+        {/* Row 1 */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-[180px] flex-1 max-w-[260px]">
+            <span className="flex items-center gap-1 text-xs font-medium text-slate-300 whitespace-nowrap">
               <Layers className="w-3.5 h-3.5 text-sky-400" />
-              <span>Explode</span>
-            </div>
+              Explode
+            </span>
             <input
               type="range"
               min={0}
@@ -100,17 +108,13 @@ export const ControlDock: React.FC<ControlDockProps> = ({
               aria-label="Exploded view separation"
               className="anatomy-slider w-full"
             />
-            <span className="font-mono-tabular text-xs text-slate-400 w-9 text-right">
+            <span className="font-mono-tabular text-xs text-slate-400 w-8 text-right">
               {Math.round(explodeAmount * 100)}%
             </span>
           </div>
 
-          {/* View Mode Segmented Control */}
-          <div
-            className="flex items-center gap-1 p-1 rounded-lg bg-slate-900/90 border border-slate-800"
-            role="group"
-            aria-label="Rendering mode"
-          >
+          {/* View Mode */}
+          <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-900/90 border border-slate-800">
             {(
               [
                 { id: 'anatomical', label: 'Anatomical' },
@@ -133,43 +137,72 @@ export const ControlDock: React.FC<ControlDockProps> = ({
             ))}
           </div>
 
-          {/* Feature Toggles */}
-          <div className="flex items-center gap-1.5">
+          {/* Playback & Visual Toggles */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {showTransparentToggle && (
+              <button
+                type="button"
+                onClick={onToggleTransparentBody}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                  transparentBody
+                    ? 'bg-sky-500/20 border-sky-400/50 text-sky-300'
+                    : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200'
+                }`}
+                title="Transparent outer body envelope"
+              >
+                <Ghost className="w-3.5 h-3.5" />
+                <span>Transparent</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={onTogglePhysiology}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                 animatePhysiology
                   ? 'bg-rose-500/15 border-rose-400/50 text-rose-300'
                   : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200'
               }`}
-              title="Toggle physiological heartbeat & breathing motion"
+              title="Play/Pause physiological animation"
             >
-              <Activity className="w-3.5 h-3.5" />
-              <span>Pulse</span>
+              {animatePhysiology ? (
+                <Pause className="w-3.5 h-3.5" />
+              ) : (
+                <Play className="w-3.5 h-3.5" />
+              )}
+              <span>{animatePhysiology ? 'Pause' : 'Play'}</span>
             </button>
+
+            <button
+              type="button"
+              onClick={onCycleSpeed}
+              className="font-mono-tabular px-2 py-1.5 rounded-lg text-xs font-medium bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white cursor-pointer"
+              title="Cycle animation speed"
+            >
+              {physiologySpeed}x
+            </button>
+
             <button
               type="button"
               onClick={onToggleAutoRotate}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                 autoRotate
                   ? 'bg-sky-500/15 border-sky-400/50 text-sky-300'
                   : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200'
               }`}
-              title="Toggle 360° auto-rotation"
             >
               <RotateCw className="w-3.5 h-3.5" />
               <span>Orbit</span>
             </button>
+
             <button
               type="button"
               onClick={onToggleLabels}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                 showLabels
                   ? 'bg-sky-500/15 border-sky-400/50 text-sky-300'
                   : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200'
               }`}
-              title="Toggle 3D callout pin"
             >
               <MapPin className="w-3.5 h-3.5" />
               <span>Pin</span>
@@ -177,16 +210,17 @@ export const ControlDock: React.FC<ControlDockProps> = ({
           </div>
         </div>
 
-        {/* Row 2: Camera Angle Presets & Zoom Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800/80">
+        {/* Row 2: Camera Presets + Zoom */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-slate-800/80">
           <div className="flex items-center gap-1.5 overflow-x-auto">
             <span className="flex items-center gap-1 text-xs text-slate-400 mr-1 whitespace-nowrap">
               <Eye className="w-3.5 h-3.5 text-slate-500" />
-              Angle
+              View
             </span>
             {(
               [
                 { id: 'front', label: 'Front' },
+                { id: 'back', label: 'Back' },
                 { id: 'left', label: 'Left' },
                 { id: 'right', label: 'Right' },
                 { id: 'superior', label: 'Top' },
@@ -205,30 +239,27 @@ export const ControlDock: React.FC<ControlDockProps> = ({
             ))}
           </div>
 
-          {/* Pinch / Wheel / Button Zoom Controls */}
           <div className="flex items-center gap-2">
-            <span className="hidden sm:inline text-[11px] text-slate-500 whitespace-nowrap">
+            <span className="hidden md:inline text-[11px] text-slate-500 whitespace-nowrap">
               Drag to rotate · Pinch or scroll to zoom
             </span>
             <div className="flex items-center rounded-lg bg-slate-900/90 border border-slate-800">
               <button
                 type="button"
                 onClick={onZoomOut}
-                className="p-1.5 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                className="p-1.5 text-slate-300 hover:text-white cursor-pointer"
                 aria-label="Zoom out"
-                title="Zoom out"
               >
                 <ZoomOut className="w-3.5 h-3.5" />
               </button>
-              <span className="font-mono-tabular text-xs text-slate-300 px-2 min-w-[46px] text-center border-x border-slate-800">
+              <span className="font-mono-tabular text-xs text-slate-300 px-2 min-w-[44px] text-center border-x border-slate-800">
                 {zoomPercent}%
               </span>
               <button
                 type="button"
                 onClick={onZoomIn}
-                className="p-1.5 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                className="p-1.5 text-slate-300 hover:text-white cursor-pointer"
                 aria-label="Zoom in"
-                title="Zoom in"
               >
                 <ZoomIn className="w-3.5 h-3.5" />
               </button>

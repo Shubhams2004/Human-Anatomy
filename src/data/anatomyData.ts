@@ -1,24 +1,67 @@
+export type AnatomicalSystemId =
+  | 'skeletal'
+  | 'muscular'
+  | 'nervous'
+  | 'cardiovascular'
+  | 'respiratory'
+  | 'digestive'
+  | 'urinary'
+  | 'reproductive'
+  | 'endocrine'
+  | 'integumentary';
+
 export type OrganSystemId =
-  | 'torso'
+  | 'body'
   | 'heart'
   | 'brain'
   | 'lungs'
-  | 'digestive'
-  | 'kidneys';
+  | 'liver'
+  | 'kidneys'
+  | 'stomach'
+  | 'intestines'
+  | 'eye'
+  | 'ear'
+  | 'skin';
 
+export type LabWorkspaceMode = 'explorer' | 'physiology' | 'pathology' | 'learning';
 export type ViewMode = 'anatomical' | 'xray' | 'wireframe';
+export type CameraPreset = 'front' | 'back' | 'left' | 'right' | 'superior' | 'reset';
 
-export type CameraPreset = 'front' | 'left' | 'right' | 'superior' | 'reset';
+export interface AnatomicalSystemMeta {
+  id: AnatomicalSystemId;
+  label: string;
+  color: string;
+  description: string;
+}
+
+export const ANATOMICAL_SYSTEMS: AnatomicalSystemMeta[] = [
+  { id: 'skeletal', label: 'Skeletal', color: '#e2d9c8', description: 'Cranium, vertebral column, thoracic cage, pelvis & appendicular bones.' },
+  { id: 'muscular', label: 'Muscular', color: '#b94a48', description: 'Skeletal muscles, diaphragm & fascial attachments for locomotion and posture.' },
+  { id: 'nervous', label: 'Nervous', color: '#eab308', description: 'Brain, spinal cord, cranial nerves & peripheral nerve plexuses.' },
+  { id: 'cardiovascular', label: 'Cardiovascular', color: '#ef4444', description: 'Heart, systemic arteries & venous return trunks.' },
+  { id: 'respiratory', label: 'Respiratory', color: '#f472b6', description: 'Trachea, bronchial tree & paired lungs.' },
+  { id: 'digestive', label: 'Digestive', color: '#d97706', description: 'Esophagus, stomach, liver, gallbladder, small & large intestines.' },
+  { id: 'urinary', label: 'Urinary', color: '#a855f7', description: 'Kidneys, ureters & urinary bladder.' },
+  { id: 'reproductive', label: 'Reproductive', color: '#ec4899', description: 'Pelvic gonads & reproductive tract structures.' },
+  { id: 'endocrine', label: 'Endocrine', color: '#14b8a6', description: 'Pituitary, thyroid, adrenal glands & pancreatic islets.' },
+  { id: 'integumentary', label: 'Integumentary', color: '#f59e0b', description: 'Translucent cutaneous envelope & dermal layers.' },
+];
 
 export interface AnatomicalPartInfo {
   id: string;
-  organId: Exclude<OrganSystemId, 'torso'>;
+  organId: Exclude<OrganSystemId, 'body'>;
+  systemId: AnatomicalSystemId;
   name: string;
+  commonName: string;
   latinName: string;
   system: string;
-  summary: string;
-  function: string;
-  clinicalNote: string;
+  location: string;
+  structureComposition: string;
+  functions: string;
+  physiologicalSignificance: string;
+  clinicalRelevance: string;
+  relatedStructures: string[];
+  bpharmNotes: string;
   metrics: { label: string; value: string }[];
 }
 
@@ -36,24 +79,25 @@ export interface OrganOverview {
 }
 
 export const ORGAN_OVERVIEWS: Record<OrganSystemId, OrganOverview> = {
-  torso: {
-    id: 'torso',
-    label: 'Full Torso',
-    latinName: 'Truncus Humanus',
-    system: 'Integrated Visceral Systems',
+  body: {
+    id: 'body',
+    label: 'Full Human Body',
+    latinName: 'Corpus Humanum',
+    system: 'All 10 Anatomical Systems',
     description:
-      'Spatial overview of major thoracic and abdominal organs within the ribcage reference frame. Click any organ to inspect its structure or use Explode to separate systems.',
-    defaultCamera: {
-      position: [0, 0.3, 6.2],
-      target: [0, 0.05, 0],
-    },
+      'Complete multi-system human body model. Toggle any of the 10 anatomical systems on the left, enable Transparent Body mode, or click any structure to inspect.',
+    defaultCamera: { position: [0, 0.2, 6.8], target: [0, 0.0, 0] },
     parts: [
+      'skeletal_cranium',
+      'skeletal_thorax',
+      'muscular_pectoral',
       'heart_ventricles',
       'lung_right',
-      'lung_left',
       'liver_right_lobe',
       'stomach_body',
+      'intestine_small',
       'kidney_left',
+      'endocrine_thyroid',
     ],
   },
   heart: {
@@ -62,11 +106,8 @@ export const ORGAN_OVERVIEWS: Record<OrganSystemId, OrganOverview> = {
     latinName: 'Cor',
     system: 'Cardiovascular System',
     description:
-      'Four-chambered muscular pump driving systemic and pulmonary circulation. Contracts ~100,000 times daily via coordinated electrical conduction.',
-    defaultCamera: {
-      position: [0.6, 0.35, 3.1],
-      target: [0, 0.05, 0],
-    },
+      'Four-chambered muscular pump driving pulmonary and systemic circulation via coordinated electrical conduction.',
+    defaultCamera: { position: [0.6, 0.35, 3.1], target: [0, 0.05, 0] },
     parts: [
       'heart_ventricles',
       'heart_atria',
@@ -82,15 +123,15 @@ export const ORGAN_OVERVIEWS: Record<OrganSystemId, OrganOverview> = {
     latinName: 'Encephalon',
     system: 'Central Nervous System',
     description:
-      'Primary command center of the nervous system, comprising folded cerebral hemispheres, cerebellum, and brainstem.',
-    defaultCamera: {
-      position: [1.9, 0.55, 2.4],
-      target: [0, 0, 0],
-    },
+      'Command center of the nervous system featuring distinct frontal, parietal, temporal, and occipital lobes, corpus callosum, thalamus, cerebellum, and brainstem.',
+    defaultCamera: { position: [2.0, 0.55, 2.5], target: [0, 0, 0] },
     parts: [
-      'brain_cerebrum_left',
-      'brain_cerebrum_right',
+      'brain_frontal',
+      'brain_parietal',
+      'brain_temporal',
+      'brain_occipital',
       'brain_corpus_callosum',
+      'brain_thalamus',
       'brain_cerebellum',
       'brain_brainstem',
     ],
@@ -101,260 +142,464 @@ export const ORGAN_OVERVIEWS: Record<OrganSystemId, OrganOverview> = {
     latinName: 'Pulmones',
     system: 'Respiratory System',
     description:
-      'Paired spongy organs facilitating alveolar gas exchange of oxygen and carbon dioxide across ~70 m² of respiratory membrane.',
-    defaultCamera: {
-      position: [0.4, 0.35, 3.9],
-      target: [0, 0.05, 0],
-    },
-    parts: [
-      'lung_trachea',
-      'lung_bronchi',
-      'lung_right',
-      'lung_left',
-      'lung_diaphragm',
-    ],
+      'Paired spongy organs facilitating alveolar O₂/CO₂ gas exchange across ~70 m² of respiratory membrane.',
+    defaultCamera: { position: [0.4, 0.35, 3.9], target: [0, 0.05, 0] },
+    parts: ['lung_trachea', 'lung_bronchi', 'lung_right', 'lung_left', 'lung_diaphragm'],
   },
-  digestive: {
-    id: 'digestive',
-    label: 'Liver & Stomach',
-    latinName: 'Hepar et Gaster',
-    system: 'Digestive System',
+  liver: {
+    id: 'liver',
+    label: 'Liver',
+    latinName: 'Hepar',
+    system: 'Digestive & Metabolic System',
     description:
-      'Upper gastrointestinal and hepatobiliary organs responsible for metabolic detoxification, bile synthesis, and enzymatic gastric digestion.',
-    defaultCamera: {
-      position: [0.5, 0.25, 3.6],
-      target: [0, -0.05, 0],
-    },
-    parts: [
-      'liver_right_lobe',
-      'liver_left_lobe',
-      'gallbladder',
-      'stomach_esophagus',
-      'stomach_body',
-      'duodenum',
-    ],
+      'Largest internal gland responsible for first-pass drug metabolism, bile synthesis, plasma protein production, and glycogen storage.',
+    defaultCamera: { position: [0.45, 0.25, 3.1], target: [0, 0.1, 0] },
+    parts: ['liver_right_lobe', 'liver_left_lobe', 'gallbladder'],
   },
   kidneys: {
     id: 'kidneys',
     label: 'Kidneys',
     latinName: 'Renes',
-    system: 'Renal & Urinary System',
+    system: 'Urinary System',
     description:
-      'Retroperitoneal bean-shaped organs filtering ~180 liters of blood plasma daily to regulate fluid balance, electrolytes, and blood pressure.',
-    defaultCamera: {
-      position: [0.3, 0.25, 3.4],
-      target: [0, 0, 0],
-    },
-    parts: [
-      'kidney_left',
-      'kidney_right',
-      'adrenal_glands',
-      'renal_vessels',
-      'ureters',
-    ],
+      'Retroperitoneal bean-shaped organs filtering ~180 L of plasma daily for drug clearance, electrolyte balance, and blood pressure control.',
+    defaultCamera: { position: [0.3, 0.25, 3.4], target: [0, 0, 0] },
+    parts: ['kidney_left', 'kidney_right', 'adrenal_glands', 'renal_vessels', 'ureters'],
+  },
+  stomach: {
+    id: 'stomach',
+    label: 'Stomach',
+    latinName: 'Gaster',
+    system: 'Digestive System',
+    description:
+      'J-shaped muscular reservoir secreting HCl (pH 1.5–2.0) and pepsinogen to initiate protein digestion and oral tablet disintegration.',
+    defaultCamera: { position: [0.4, 0.15, 3.0], target: [0.1, -0.1, 0] },
+    parts: ['stomach_esophagus', 'stomach_body', 'duodenum'],
+  },
+  intestines: {
+    id: 'intestines',
+    label: 'Intestines',
+    latinName: 'Intestinum Tenue et Crassum',
+    system: 'Digestive System',
+    description:
+      'Coiled small intestine (duodenum, jejunum, ileum) framed by the haustrated large intestine (colon), serving as the primary site of oral drug absorption.',
+    defaultCamera: { position: [0.2, 0.1, 3.6], target: [0, -0.05, 0] },
+    parts: ['intestine_small', 'intestine_colon', 'intestine_appendix'],
+  },
+  eye: {
+    id: 'eye',
+    label: 'Human Eye',
+    latinName: 'Oculus',
+    system: 'Nervous / Special Senses',
+    description:
+      'Spherical photoreceptor organ focusing light through the cornea and crystalline lens onto the neural retina.',
+    defaultCamera: { position: [1.5, 0.35, 2.3], target: [0, 0, 0] },
+    parts: ['eye_cornea_iris', 'eye_sclera', 'eye_lens', 'eye_retina', 'eye_optic_nerve'],
+  },
+  ear: {
+    id: 'ear',
+    label: 'Human Ear',
+    latinName: 'Auris',
+    system: 'Nervous / Special Senses',
+    description:
+      'Auditory and vestibular apparatus converting sound waves into cochlear mechanoelectrical signals and sensing head acceleration.',
+    defaultCamera: { position: [0.3, 0.25, 2.9], target: [0, 0, 0] },
+    parts: ['ear_pinna_canal', 'ear_tympanic_ossicles', 'ear_cochlea', 'ear_semicircular'],
+  },
+  skin: {
+    id: 'skin',
+    label: 'Skin Layers',
+    latinName: 'Cutis (Integumentum)',
+    system: 'Integumentary System',
+    description:
+      'Stratified three-layer tissue block (epidermis, dermis, hypodermis) with hair follicle, sebaceous/sweat glands, and dermal capillary plexus.',
+    defaultCamera: { position: [1.9, 0.9, 2.5], target: [0, 0, 0] },
+    parts: ['skin_epidermis', 'skin_dermis', 'skin_hypodermis', 'skin_follicle_gland'],
   },
 };
 
 export const ANATOMICAL_PARTS: Record<string, AnatomicalPartInfo> = {
+  // SKELETAL & MUSCULAR (Full Body highlights)
+  skeletal_cranium: {
+    id: 'skeletal_cranium',
+    organId: 'brain',
+    systemId: 'skeletal',
+    name: 'Cranium & Axial Skull',
+    commonName: 'Skull',
+    latinName: 'Cranium',
+    system: 'Skeletal System',
+    location: 'Superior aspect of the axial skeleton.',
+    structureComposition: '22 fused and articulated cranial and facial bones composed of compact cortical and spongy diploë bone.',
+    functions: 'Encases and protects the brain, special sense organs, and upper airway.',
+    physiologicalSignificance: 'Maintains rigid intracranial volume (Monro-Kellie doctrine) and houses red bone marrow.',
+    clinicalRelevance: 'Basilar skull fractures or elevated intracranial pressure compromise brainstem perfusion.',
+    relatedStructures: ['brain_frontal', 'brain_brainstem', 'skeletal_thorax'],
+    bpharmNotes: 'Cranial bone marrow is a minor site of adult hematopoiesis; the blood-brain barrier limits CNS drug entry.',
+    metrics: [
+      { label: 'Bones', value: '22 bones' },
+      { label: 'Sutures', value: 'Fibrous' },
+      { label: 'Cavity Vol.', value: '~1,400 mL' },
+    ],
+  },
+  skeletal_thorax: {
+    id: 'skeletal_thorax',
+    organId: 'lungs',
+    systemId: 'skeletal',
+    name: 'Thoracic Cage & Vertebral Column',
+    commonName: 'Ribcage & Spine',
+    latinName: 'Cavea Thoracis et Columna Vertebralis',
+    system: 'Skeletal System',
+    location: 'Posterior and anterior thoracic wall surrounding heart and lungs.',
+    structureComposition: '12 pairs of curved ribs, hyaline costal cartilages, sternum, and 24 articulated vertebrae.',
+    functions: 'Protects thoracic viscera and expands during inspiration via bucket-handle rib motion.',
+    physiologicalSignificance: 'Houses ~90% of adult hematopoietic red bone marrow in sternum, ribs, and vertebrae.',
+    clinicalRelevance: 'Vertebral compression fractures are a hallmark of postmenopausal osteoporosis.',
+    relatedStructures: ['lung_right', 'lung_left', 'heart_ventricles'],
+    bpharmNotes: 'Sternum and iliac crest are primary bone marrow biopsy sites; bisphosphonates target trabecular remodeling here.',
+    metrics: [
+      { label: 'Rib Pairs', value: '12 pairs' },
+      { label: 'Vertebrae', value: '33 total' },
+      { label: 'Marrow Share', value: 'High' },
+    ],
+  },
+  muscular_pectoral: {
+    id: 'muscular_pectoral',
+    organId: 'heart',
+    systemId: 'muscular',
+    name: 'Skeletal Musculature (Pectoral & Deltoid)',
+    commonName: 'Chest & Shoulder Muscles',
+    latinName: 'Musculi Pectorales et Deltoideus',
+    system: 'Muscular System',
+    location: 'Anterior thoracic wall and lateral shoulder.',
+    structureComposition: 'Multinucleated striated skeletal muscle fibers rich in actin, myosin, and myoglobin.',
+    functions: 'Generates voluntary force, adduction/flexion of the humerus, and accessory inspiration.',
+    physiologicalSignificance: 'Major site of postprandial glucose uptake via insulin-dependent GLUT4 transporters.',
+    clinicalRelevance: 'Deltoid muscle is a standard site for intramuscular (IM) vaccine and depot drug injections.',
+    relatedStructures: ['skeletal_thorax', 'endocrine_thyroid'],
+    bpharmNotes: 'IM injection into the deltoid bypasses first-pass hepatic metabolism; neuromuscular blockers act at nicotinic NM receptors here.',
+    metrics: [
+      { label: 'IM Volume', value: '1–2 mL' },
+      { label: 'Receptor', value: 'Nicotinic Nm' },
+      { label: 'Body Mass', value: '~40%' },
+    ],
+  },
+  endocrine_thyroid: {
+    id: 'endocrine_thyroid',
+    organId: 'lungs',
+    systemId: 'endocrine',
+    name: 'Thyroid Gland',
+    commonName: 'Thyroid',
+    latinName: 'Glandula Thyroidea',
+    system: 'Endocrine System',
+    location: 'Anterior neck, wrapping the upper trachea below the larynx.',
+    structureComposition: 'Bilobed vascular endocrine gland composed of colloid-filled thyroid follicles and parafollicular C-cells.',
+    functions: 'Synthesizes and secretes T₃ (triiodothyronine), T₄ (thyroxine), and calcitonin.',
+    physiologicalSignificance: 'Sets basal metabolic rate (BMR), heart rate sensitivity to catecholamines, and thermogenesis.',
+    clinicalRelevance: 'Hypothyroidism slows metabolism and drug clearance; hyperthyroidism causes tachycardia and weight loss.',
+    relatedStructures: ['lung_trachea', 'heart_ventricles'],
+    bpharmNotes: 'Levothyroxine (T₄) is taken on an empty stomach; antithyroid drugs (methimazole, PTU) inhibit thyroid peroxidase.',
+    metrics: [
+      { label: 'Mass', value: '15–25 g' },
+      { label: 'Hormones', value: 'T₃, T₄, CT' },
+      { label: 'Regulation', value: 'TSH (HPT)' },
+    ],
+  },
+
   // HEART
   heart_ventricles: {
     id: 'heart_ventricles',
     organId: 'heart',
+    systemId: 'cardiovascular',
     name: 'Ventricular Myocardium',
+    commonName: 'Heart Ventricles',
     latinName: 'Ventriculi Cordis',
-    system: 'Cardiovascular',
-    summary:
-      'Thick-walled inferior chambers (left and right ventricles) responsible for ejecting blood into the aorta and pulmonary trunk.',
-    function:
-      'The left ventricle has a myocardium 3x thicker than the right to generate ~120 mmHg systemic systolic pressure.',
-    clinicalNote:
-      'Ventricular hypertrophy commonly develops in response to chronic hypertension or aortic stenosis.',
+    system: 'Cardiovascular System',
+    location: 'Inferior 2/3 of the heart in the middle mediastinum.',
+    structureComposition: 'Thick, spirally arranged cardiac myocytes joined by intercalated discs and gap junctions.',
+    functions: 'Right ventricle pumps blood to lungs; left ventricle ejects blood into systemic aorta.',
+    physiologicalSignificance: 'Generates systemic arterial pressure (120/80 mmHg) required for organ perfusion.',
+    clinicalRelevance: 'Left ventricular hypertrophy or myocardial infarction impairs ejection fraction and cardiac output.',
+    relatedStructures: ['heart_atria', 'heart_aorta', 'heart_coronary'],
+    bpharmNotes: 'β₁-adrenergic agonists increase contractility (positive inotropy); ACE inhibitors and β-blockers reduce ventricular remodeling.',
     metrics: [
       { label: 'Resting Rate', value: '60–100 bpm' },
-      { label: 'Stroke Volume', value: '70 mL' },
-      { label: 'Ejection Fraction', value: '55–70%' },
+      { label: 'Stroke Vol.', value: '70 mL' },
+      { label: 'EF Normal', value: '55–70%' },
     ],
   },
   heart_atria: {
     id: 'heart_atria',
     organId: 'heart',
-    name: 'Atria & Auricles',
+    systemId: 'cardiovascular',
+    name: 'Right & Left Atria',
+    commonName: 'Upper Heart Chambers',
     latinName: 'Atria Cordis',
-    system: 'Cardiovascular',
-    summary:
-      'Superior receiving chambers that collect venous return from the venae cavae (right) and pulmonary veins (left).',
-    function:
-      'Atrial contraction ("atrial kick") contributes the final ~20% of ventricular filling at the end of diastole.',
-    clinicalNote:
-      'The sinoatrial (SA) node in the right atrium acts as the heart’s natural pacemaker.',
+    system: 'Cardiovascular System',
+    location: 'Superior-posterior base of the heart.',
+    structureComposition: 'Thin-walled myocardium with pectinate muscles and the sinoatrial (SA) pacemaker node.',
+    functions: 'Receives venous return and delivers final 20% ventricular filling ("atrial kick").',
+    physiologicalSignificance: 'Secretes atrial natriuretic peptide (ANP) in response to volume stretch.',
+    clinicalRelevance: 'Atrial fibrillation causes stasis in the left atrial appendage, increasing stroke risk.',
+    relatedStructures: ['heart_ventricles', 'heart_vena_cava'],
+    bpharmNotes: 'Anticoagulants (warfarin, apixaban) and Class Ic/III antiarrhythmics target atrial thromboembolism and rhythm control.',
     metrics: [
-      { label: 'Wall Thickness', value: '2–3 mm' },
+      { label: 'Wall Thick.', value: '2–3 mm' },
+      { label: 'SA Pace', value: '60–100/min' },
       { label: 'RA Pressure', value: '2–6 mmHg' },
-      { label: 'LA Pressure', value: '6–12 mmHg' },
     ],
   },
   heart_aorta: {
     id: 'heart_aorta',
     organId: 'heart',
-    name: 'Aortic Arch & Branches',
+    systemId: 'cardiovascular',
+    name: 'Aortic Arch & Elastic Trunks',
+    commonName: 'Aorta',
     latinName: 'Arcus Aortae',
-    system: 'Cardiovascular',
-    summary:
-      'The largest elastic artery in the body, arching superiorly from the left ventricle with three major head-and-arm trunks.',
-    function:
-      'Elastic recoil of the aortic wall (Windkessel effect) maintains diastolic blood flow throughout systemic arteries.',
-    clinicalNote:
-      'Gives rise to the brachiocephalic trunk, left common carotid, and left subclavian arteries.',
+    system: 'Cardiovascular System',
+    location: 'Arches superiorly from the left ventricle over the pulmonary trunk.',
+    structureComposition: 'Tunica media rich in concentric elastic laminae and smooth muscle.',
+    functions: 'Distributes oxygenated blood to head, upper limbs, and descending systemic circulation.',
+    physiologicalSignificance: 'Windkessel elastic recoil maintains diastolic blood flow and dampens pulse pressure.',
+    clinicalRelevance: 'Aortic atherosclerosis increases systolic blood pressure and aneurysm risk.',
+    relatedStructures: ['heart_ventricles', 'heart_coronary'],
+    bpharmNotes: 'Aortic baroreceptors (CN IX/X) sense stretch to trigger autonomic reflex control of blood pressure.',
     metrics: [
-      { label: 'Peak Velocity', value: '1.0–1.7 m/s' },
       { label: 'Diameter', value: '25–30 mm' },
-      { label: 'Oxygen Sat.', value: '95–100%' },
+      { label: 'Peak Flow', value: '1.2 m/s' },
+      { label: 'O₂ Sat.', value: '95–100%' },
     ],
   },
   heart_pulmonary: {
     id: 'heart_pulmonary',
     organId: 'heart',
-    name: 'Pulmonary Trunk',
+    systemId: 'cardiovascular',
+    name: 'Pulmonary Trunk & Arteries',
+    commonName: 'Pulmonary Artery',
     latinName: 'Truncus Pulmonalis',
-    system: 'Cardiovascular',
-    summary:
-      'Arises from the right ventricle and bifurcates into the left and right pulmonary arteries carrying deoxygenated blood to the lungs.',
-    function:
-      'Delivers venous blood to alveolar capillaries for oxygenation at low pressure (~25/10 mmHg).',
-    clinicalNote:
-      'The only arteries in the postnatal body that carry deoxygenated blood.',
+    system: 'Cardiovascular System',
+    location: 'Anterior to ascending aorta, bifurcating beneath the aortic arch.',
+    structureComposition: 'Thin-walled elastic arterial trunk branching into left and right pulmonary arteries.',
+    functions: 'Carries deoxygenated blood from the right ventricle to pulmonary alveolar capillaries.',
+    physiologicalSignificance: 'Low-resistance, low-pressure circuit (~25/10 mmHg) preventing pulmonary edema.',
+    clinicalRelevance: 'Pulmonary embolism obstructs blood flow, causing acute right ventricular strain.',
+    relatedStructures: ['lung_right', 'lung_left', 'heart_ventricles'],
+    bpharmNotes: 'PDE-5 inhibitors (sildenafil) and prostacyclin analogs dilate pulmonary arterioles in pulmonary arterial hypertension.',
     metrics: [
-      { label: 'Mean Pressure', value: '14 mmHg' },
+      { label: 'Mean PAP', value: '14 mmHg' },
+      { label: 'O₂ Sat.', value: '~75%' },
       { label: 'Length', value: '~5 cm' },
-      { label: 'Oxygen Sat.', value: '~75%' },
     ],
   },
   heart_vena_cava: {
     id: 'heart_vena_cava',
     organId: 'heart',
+    systemId: 'cardiovascular',
     name: 'Superior & Inferior Vena Cava',
+    commonName: 'Venae Cavae',
     latinName: 'Vena Cava Superior et Inferior',
-    system: 'Cardiovascular',
-    summary:
-      'Great venous trunks returning systemic deoxygenated blood from the upper and lower body into the right atrium.',
-    function:
-      'Maintains continuous low-resistance venous return aided by respiratory intrathoracic pressure changes.',
-    clinicalNote:
-      'Central venous catheters are typically positioned at the cavoatrial junction.',
+    system: 'Cardiovascular System',
+    location: 'Right lateral border of the mediastinum entering the right atrium.',
+    structureComposition: 'Large-lumen compliant venous trunks with thin tunica media.',
+    functions: 'Returns systemic venous blood from upper and lower body to the heart.',
+    physiologicalSignificance: 'Regulates cardiac preload via venous return and central venous pressure.',
+    clinicalRelevance: 'IV venodilators (nitroglycerin) pool blood in systemic veins, reducing preload.',
+    relatedStructures: ['heart_atria', 'kidney_right'],
+    bpharmNotes: 'Sublingual nitroglycerin preferentially dilates capacitance veins, decreasing myocardial O₂ demand.',
     metrics: [
-      { label: 'SVC Diameter', value: '18–22 mm' },
-      { label: 'IVC Diameter', value: '20–25 mm' },
       { label: 'CVP', value: '2–8 mmHg' },
+      { label: 'SVC Width', value: '20 mm' },
+      { label: 'IVC Width', value: '22 mm' },
     ],
   },
   heart_coronary: {
     id: 'heart_coronary',
     organId: 'heart',
-    name: 'Coronary Arteries',
+    systemId: 'cardiovascular',
+    name: 'Coronary Arteries (LAD & RCA)',
+    commonName: 'Coronary Vessels',
     latinName: 'Arteriae Coronariae',
-    system: 'Cardiovascular',
-    summary:
-      'Epicardial vessels branching from the aortic root to supply oxygenated blood directly to the myocardium.',
-    function:
-      'Unlike systemic organs, coronary perfusion occurs predominantly during ventricular diastole when muscle tension relaxes.',
-    clinicalNote:
-      'The left anterior descending (LAD) artery supplies the anterior interventricular septum and apex.',
+    system: 'Cardiovascular System',
+    location: 'Epicardial surface within interventricular and atrioventricular sulci.',
+    structureComposition: 'Muscular arteries branching from the aortic sinuses.',
+    functions: 'Supplies continuous oxygenated blood to the working myocardium.',
+    physiologicalSignificance: 'Perfusion occurs predominantly during ventricular diastole.',
+    clinicalRelevance: 'Atherosclerotic plaque rupture causes acute myocardial infarction.',
+    relatedStructures: ['heart_aorta', 'heart_ventricles'],
+    bpharmNotes: 'Antiplatelets (aspirin, clopidogrel), statins, and nitrates prevent and treat coronary ischemia.',
     metrics: [
-      { label: 'Blood Flow', value: '250 mL/min' },
-      { label: 'O₂ Extraction', value: '70–80%' },
-      { label: 'Cardiac Share', value: '~5% CO' },
+      { label: 'Flow', value: '250 mL/min' },
+      { label: 'O₂ Extract', value: '75%' },
+      { label: 'CO Share', value: '~5%' },
     ],
   },
 
-  // BRAIN
-  brain_cerebrum_left: {
-    id: 'brain_cerebrum_left',
+  // BRAIN (Exploded Lobes + Deep Nuclei)
+  brain_frontal: {
+    id: 'brain_frontal',
     organId: 'brain',
-    name: 'Left Cerebral Hemisphere',
-    latinName: 'Hemispherium Cerebri Sinistrum',
-    system: 'Nervous',
-    summary:
-      'Folded cortical hemisphere divided into frontal, parietal, temporal, and occipital lobes; dominant for language in most individuals.',
-    function:
-      'Controls contralateral (right-sided) motor and somatosensory function, Broca’s speech production, and Wernicke’s comprehension.',
-    clinicalNote:
-      'Cortical gyri (ridges) and sulci (grooves) triple the surface area of gray matter within the cranial vault.',
+    systemId: 'nervous',
+    name: 'Frontal Lobe',
+    commonName: 'Frontal Cortex',
+    latinName: 'Lobus Frontalis',
+    system: 'Nervous System',
+    location: 'Anterior cranial fossa, rostral to the central sulcus.',
+    structureComposition: 'Six-layered neocortex (gray matter) over myelinated association tracts.',
+    functions: 'Executive planning, voluntary motor control (precentral gyrus), and Broca’s speech production.',
+    physiologicalSignificance: 'Integrates working memory, impulse control, and descending corticospinal motor commands.',
+    clinicalRelevance: 'Frontal lobe injury alters personality, judgment, and contralateral motor strength.',
+    relatedStructures: ['brain_parietal', 'brain_corpus_callosum'],
+    bpharmNotes: 'Dopaminergic mesocortical pathways project to prefrontal cortex; antipsychotics and stimulants modulate D₁/D₂ receptors here.',
     metrics: [
-      { label: 'Cortical Neurons', value: '~8 billion' },
-      { label: 'Cortical Area', value: '~1,200 cm²' },
-      { label: 'Glucose Use', value: '20% body' },
+      { label: 'Cortex Share', value: '~33%' },
+      { label: 'Motor Area', value: 'Brodmann 4' },
+      { label: 'Dominant NT', value: 'Glu / DA' },
     ],
   },
-  brain_cerebrum_right: {
-    id: 'brain_cerebrum_right',
+  brain_parietal: {
+    id: 'brain_parietal',
     organId: 'brain',
-    name: 'Right Cerebral Hemisphere',
-    latinName: 'Hemispherium Cerebri Dextrum',
-    system: 'Nervous',
-    summary:
-      'Mirror cerebral hemisphere specialized for visuospatial processing, prosody, and contralateral left-sided motor control.',
-    function:
-      'Integrates spatial attention, facial recognition, and holistic sensory synthesis across its four lobes.',
-    clinicalNote:
-      'Right parietal lobe lesions can result in contralateral hemispatial neglect.',
+    systemId: 'nervous',
+    name: 'Parietal Lobe',
+    commonName: 'Sensory Cortex',
+    latinName: 'Lobus Parietalis',
+    system: 'Nervous System',
+    location: 'Superior-posterior cerebrum behind the central sulcus.',
+    structureComposition: 'Somatosensory cortex (postcentral gyrus) and associative multimodal cortex.',
+    functions: 'Processes touch, pain, temperature, proprioception, and visuospatial orientation.',
+    physiologicalSignificance: 'Creates the somatotopic sensory homunculus map of the body.',
+    clinicalRelevance: 'Non-dominant parietal lesions cause contralateral hemispatial neglect.',
+    relatedStructures: ['brain_frontal', 'brain_occipital', 'brain_thalamus'],
+    bpharmNotes: 'Opioid analgesics and gabapentinoids modulate ascending nociceptive relay before cortical perception.',
     metrics: [
-      { label: 'Brain Weight', value: '1,300–1,400 g' },
-      { label: 'Blood Flow', value: '750 mL/min' },
-      { label: 'O₂ Consumption', value: '20% total' },
+      { label: 'Primary S1', value: 'Brodmann 3,1,2' },
+      { label: 'Input', value: 'Thalamic VPL' },
+      { label: 'Lateral', value: 'Contralateral' },
+    ],
+  },
+  brain_temporal: {
+    id: 'brain_temporal',
+    organId: 'brain',
+    systemId: 'nervous',
+    name: 'Temporal Lobe & Hippocampus',
+    commonName: 'Auditory & Memory Lobe',
+    latinName: 'Lobus Temporalis',
+    system: 'Nervous System',
+    location: 'Middle cranial fossa inferior to the lateral (Sylvian) fissure.',
+    structureComposition: 'Auditory neocortex, Wernicke’s area, and medial limbic hippocampus/amygdala.',
+    functions: 'Auditory decoding, language comprehension, and declarative memory consolidation.',
+    physiologicalSignificance: 'Hippocampal long-term potentiation (LTP) underlies learning and memory.',
+    clinicalRelevance: 'Medial temporal sclerosis is the most common cause of focal epilepsy; early degeneration in Alzheimer’s.',
+    relatedStructures: ['ear_cochlea', 'brain_thalamus'],
+    bpharmNotes: 'Acetylcholinesterase inhibitors (donepezil) boost cholinergic memory circuits; antiepileptics stabilize temporal firing.',
+    metrics: [
+      { label: 'Auditory A1', value: 'Brodmann 41' },
+      { label: 'Memory', value: 'Hippocampus' },
+      { label: 'Key NT', value: 'ACh / Glu' },
+    ],
+  },
+  brain_occipital: {
+    id: 'brain_occipital',
+    organId: 'brain',
+    systemId: 'nervous',
+    name: 'Occipital Lobe',
+    commonName: 'Visual Cortex',
+    latinName: 'Lobus Occipitalis',
+    system: 'Nervous System',
+    location: 'Posterior pole of the cerebral hemispheres resting on the tentorium cerebelli.',
+    structureComposition: 'Striate visual cortex (V1) flanking the calcarine sulcus.',
+    functions: 'Decodes visual orientation, color, motion, and binocular depth.',
+    physiologicalSignificance: 'Receives retinotopic projections from the lateral geniculate nucleus (LGN).',
+    clinicalRelevance: 'Posterior cerebral artery occlusion produces contralateral homonymous hemianopia.',
+    relatedStructures: ['eye_optic_nerve', 'brain_thalamus'],
+    bpharmNotes: 'Migraine visual aura often originates as cortical spreading depression in the occipital cortex.',
+    metrics: [
+      { label: 'Primary V1', value: 'Brodmann 17' },
+      { label: 'Relay', value: 'LGN Thalamus' },
+      { label: 'Blood Supply', value: 'PCA' },
     ],
   },
   brain_corpus_callosum: {
     id: 'brain_corpus_callosum',
     organId: 'brain',
+    systemId: 'nervous',
     name: 'Corpus Callosum',
+    commonName: 'Interhemispheric Bridge',
     latinName: 'Corpus Callosum',
-    system: 'Nervous',
-    summary:
-      'Thick C-shaped commissural tract of ~200 million myelinated axons connecting the left and right cerebral hemispheres.',
-    function:
-      'Synchronizes motor, sensory, and cognitive information between hemispheres in milliseconds.',
-    clinicalNote:
-      'Use the Explode slider to separate the hemispheres and reveal the corpus callosum.',
+    system: 'Nervous System',
+    location: 'Deep midline roof of the lateral ventricles.',
+    structureComposition: '~200 million densely myelinated commissural axons (rostrum, genu, body, splenium).',
+    functions: 'Synchronizes sensory, motor, and cognitive processing between left and right hemispheres.',
+    physiologicalSignificance: 'Enables unified bimanual coordination and bilateral perceptual integration.',
+    clinicalRelevance: 'Callosotomy is occasionally performed for refractory drop-attack seizures.',
+    relatedStructures: ['brain_frontal', 'brain_parietal', 'brain_thalamus'],
+    bpharmNotes: 'High myelin lipid content makes white-matter tracts selectively visible on T1/T2 MRI.',
     metrics: [
-      { label: 'Axon Count', value: '~200M' },
+      { label: 'Axons', value: '~200 million' },
       { label: 'Length', value: '~10 cm' },
-      { label: 'Conduction', value: '5–30 m/s' },
+      { label: 'Speed', value: '5–30 m/s' },
+    ],
+  },
+  brain_thalamus: {
+    id: 'brain_thalamus',
+    organId: 'brain',
+    systemId: 'nervous',
+    name: 'Thalamus & Hypothalamus',
+    commonName: 'Diencephalon Relay',
+    latinName: 'Thalamus et Hypothalamus',
+    system: 'Nervous System / Endocrine',
+    location: 'Deep central diencephalon flanking the third ventricle.',
+    structureComposition: 'Paired ovoid gray-matter nuclei (thalamus) and ventral neuroendocrine nuclei (hypothalamus).',
+    functions: 'Thalamus gates all sensory signals (except olfaction); hypothalamus regulates temperature, hunger, thirst, and pituitary hormones.',
+    physiologicalSignificance: 'Master homeostatic integrator linking the autonomic nervous system and endocrine axis.',
+    clinicalRelevance: 'Hypothalamic thermoregulatory setpoint shifts cause fever via PGE₂.',
+    relatedStructures: ['brain_corpus_callosum', 'brain_brainstem'],
+    bpharmNotes: 'NSAIDs (paracetamol, ibuprofen) inhibit hypothalamic COX-mediated PGE₂ synthesis to reduce fever.',
+    metrics: [
+      { label: 'Sensory Gate', value: 'All exc. smell' },
+      { label: 'Setpoint', value: '37.0 °C' },
+      { label: 'Axis', value: 'HPA / HPT' },
     ],
   },
   brain_cerebellum: {
     id: 'brain_cerebellum',
     organId: 'brain',
+    systemId: 'nervous',
     name: 'Cerebellum',
+    commonName: 'Little Brain',
     latinName: 'Cerebellum',
-    system: 'Nervous',
-    summary:
-      'Finely striated ("foliated") bilobed structure tucked beneath the occipital lobes in the posterior cranial fossa.',
-    function:
-      'Coordinates posture, balance, motor learning, and smooth timing of voluntary movements without initiating them.',
-    clinicalNote:
-      'Contains more than half of all neurons in the entire human brain despite representing only 10% of its volume.',
+    system: 'Nervous System',
+    location: 'Posterior cranial fossa inferior to the occipital lobes.',
+    structureComposition: 'Finely folded folia housing Purkinje and granule cells (~69 billion neurons).',
+    functions: 'Coordinates posture, balance, muscle tone, and smooth timing of voluntary movement.',
+    physiologicalSignificance: 'Compares intended motor plans with real-time proprioceptive feedback.',
+    clinicalRelevance: 'Cerebellar dysfunction causes ataxia, intention tremor, and nystagmus.',
+    relatedStructures: ['brain_brainstem', 'ear_semicircular'],
+    bpharmNotes: 'Ethanol, benzodiazepines, and phenytoin toxicity prominently impair cerebellar Purkinje output, causing ataxia.',
     metrics: [
       { label: 'Neurons', value: '~69 billion' },
-      { label: 'Volume Share', value: '10% brain' },
-      { label: 'Folia Depth', value: '1–2 mm' },
+      { label: 'Brain Share', value: '10% vol' },
+      { label: 'Output', value: 'Ipsilateral' },
     ],
   },
   brain_brainstem: {
     id: 'brain_brainstem',
     organId: 'brain',
-    name: 'Brainstem (Pons & Medulla)',
+    systemId: 'nervous',
+    name: 'Brainstem (Midbrain, Pons & Medulla)',
+    commonName: 'Brainstem',
     latinName: 'Truncus Encephali',
-    system: 'Nervous',
-    summary:
-      'Vital stalk linking the cerebrum and cerebellum to the spinal cord, housing cranial nerve nuclei III–XII.',
-    function:
-      'Regulates autonomic life-support functions: respiratory rhythm, heart rate, blood pressure, and sleep-wake arousal.',
-    clinicalNote:
-      'All ascending sensory and descending motor tracts pass through this compact anatomical bottleneck.',
+    system: 'Nervous System',
+    location: 'Ventral to cerebellum, continuous inferiorly with the spinal cord.',
+    structureComposition: 'Ascending/descending fiber tracts, reticular formation, and cranial nerve nuclei III–XII.',
+    functions: 'Controls automatic breathing rhythm, heart rate, blood pressure, swallowing, and vomiting reflex.',
+    physiologicalSignificance: 'Houses the chemoreceptor trigger zone (CTZ) and medullary cardiorespiratory centers.',
+    clinicalRelevance: 'Opioid overdose depresses medullary respiratory chemosensitivity, causing fatal apnea.',
+    relatedStructures: ['brain_cerebellum', 'lung_diaphragm'],
+    bpharmNotes: 'Naloxone reverses opioid respiratory depression; ondansetron (5-HT₃ antagonist) blocks CTZ-mediated emesis.',
     metrics: [
-      { label: 'Cranial Nerves', value: 'CN III–XII' },
+      { label: 'Cranial N.', value: 'CN III–XII' },
       { label: 'Length', value: '~7.5 cm' },
-      { label: 'Vital Centers', value: 'Resp / Cardio' },
+      { label: 'Vital Role', value: 'Resp / BP' },
     ],
   },
 
@@ -362,201 +607,301 @@ export const ANATOMICAL_PARTS: Record<string, AnatomicalPartInfo> = {
   lung_trachea: {
     id: 'lung_trachea',
     organId: 'lungs',
+    systemId: 'respiratory',
     name: 'Trachea',
+    commonName: 'Windpipe',
     latinName: 'Trachea',
-    system: 'Respiratory',
-    summary:
-      'Fibromuscular airway reinforced by 16–20 C-shaped hyaline cartilage rings to prevent collapse during inspiration.',
-    function:
-      'Conducts, warms, humidifies, and filters inhaled air via pseudostratified ciliated epithelium.',
-    clinicalNote:
-      'Bifurcates at the carina (level of T4–T5) into the left and right mainstem bronchi.',
+    system: 'Respiratory System',
+    location: 'Anterior mediastinum from larynx (C6) to carina (T4–T5).',
+    structureComposition: '16–20 C-shaped hyaline cartilage rings lined by ciliated pseudostratified epithelium.',
+    functions: 'Conducts, warms, humidifies, and mucociliary-clears inspired air.',
+    physiologicalSignificance: 'Cartilage prevents airway collapse during negative-pressure inspiration.',
+    clinicalRelevance: 'Carina is a sensitive cough-reflex zone.',
+    relatedStructures: ['lung_bronchi', 'endocrine_thyroid'],
+    bpharmNotes: 'Codeine and dextromethorphan suppress the medullary cough reflex triggered by tracheal irritants.',
     metrics: [
       { label: 'Length', value: '10–12 cm' },
-      { label: 'Diameter', value: '18–22 mm' },
-      { label: 'Cartilage Rings', value: '16–20' },
+      { label: 'Rings', value: '16–20 C' },
+      { label: 'Diameter', value: '20 mm' },
     ],
   },
   lung_bronchi: {
     id: 'lung_bronchi',
     organId: 'lungs',
+    systemId: 'respiratory',
     name: 'Bronchial Tree',
+    commonName: 'Airways / Bronchi',
     latinName: 'Arbor Bronchialis',
-    system: 'Respiratory',
-    summary:
-      'Branching airway conduits dividing into primary, lobar, and segmental bronchi inside each lung hilum.',
-    function:
-      'Distributes inspired air across 23 generations of branching down to terminal bronchioles and alveolar sacs.',
-    clinicalNote:
-      'The right main bronchus is wider, shorter, and more vertical than the left.',
+    system: 'Respiratory System',
+    location: 'Branching from the tracheal carina into both lung hila.',
+    structureComposition: 'Smooth muscle walls with progressively decreasing cartilage plates down to bronchioles.',
+    functions: 'Regulates airway resistance and distributes air to alveolar ducts.',
+    physiologicalSignificance: 'Autonomic tone controls bronchodilation (β₂ sympathetic) vs bronchoconstriction (M₃ parasympathetic).',
+    clinicalRelevance: 'Bronchospasm and mucosal edema narrow bronchioles in asthma and COPD.',
+    relatedStructures: ['lung_trachea', 'lung_right', 'lung_left'],
+    bpharmNotes: 'Inhaled β₂-agonists (salbutamol) and M₃-antagonists (ipratropium) relax bronchial smooth muscle.',
     metrics: [
-      { label: 'Generations', value: '23 levels' },
-      { label: 'Right Angle', value: '~25°' },
-      { label: 'Left Angle', value: '~45°' },
+      { label: 'Branches', value: '23 levels' },
+      { label: 'Dilator', value: 'β₂-AR' },
+      { label: 'Constrictor', value: 'M₃-AChR' },
     ],
   },
   lung_right: {
     id: 'lung_right',
     organId: 'lungs',
+    systemId: 'respiratory',
     name: 'Right Lung (3 Lobes)',
+    commonName: 'Right Lung',
     latinName: 'Pulmo Dexter',
-    system: 'Respiratory',
-    summary:
-      'Slightly larger and shorter than the left lung, divided into superior, middle, and inferior lobes by two fissures.',
-    function:
-      'Performs ~55% of total pulmonary gas exchange across ~300 million shared alveoli.',
-    clinicalNote:
-      'Separated by the oblique and horizontal fissures; rests above the right hemidiaphragm and liver.',
+    system: 'Respiratory System',
+    location: 'Right pleural cavity above the right hemidiaphragm.',
+    structureComposition: 'Spongy elastic parenchyma with superior, middle, and inferior lobes (~300M shared alveoli).',
+    functions: 'Performs ~55% of pulmonary O₂ uptake and CO₂ elimination.',
+    physiologicalSignificance: 'Alveolar type II pneumocytes secrete surfactant to reduce surface tension.',
+    clinicalRelevance: 'Aspirated foreign bodies enter the right lower lobe bronchus more often due to its vertical angle.',
+    relatedStructures: ['lung_bronchi', 'lung_diaphragm', 'liver_right_lobe'],
+    bpharmNotes: 'Pulmonary inhalation delivers rapid local bronchodilators and systemic volatile anesthetics.',
     metrics: [
       { label: 'Lobes', value: '3 lobes' },
-      { label: 'Segments', value: '10 segments' },
-      { label: 'Ventilation', value: '~55%' },
+      { label: 'Segments', value: '10' },
+      { label: 'Gas Share', value: '~55%' },
     ],
   },
   lung_left: {
     id: 'lung_left',
     organId: 'lungs',
+    systemId: 'respiratory',
     name: 'Left Lung (2 Lobes)',
+    commonName: 'Left Lung',
     latinName: 'Pulmo Sinister',
-    system: 'Respiratory',
-    summary:
-      'Divided into superior and inferior lobes by a single oblique fissure, featuring an anterior cardiac notch.',
-    function:
-      'Accommodates the leftward-tilted apex of the heart while providing ~45% of pulmonary gas exchange.',
-    clinicalNote:
-      'The lingula of the left superior lobe is the embryological homolog of the right middle lobe.',
+    system: 'Respiratory System',
+    location: 'Left pleural cavity, indented medially by the cardiac notch.',
+    structureComposition: 'Superior and inferior lobes separated by the oblique fissure.',
+    functions: 'Performs ~45% of gas exchange while accommodating the cardiac apex.',
+    physiologicalSignificance: 'Matches alveolar ventilation (V) with pulmonary capillary perfusion (Q).',
+    clinicalRelevance: 'Pneumonia fills alveoli with inflammatory exudate, impairing O₂ diffusion.',
+    relatedStructures: ['heart_ventricles', 'lung_bronchi'],
+    bpharmNotes: 'ACE inhibitors can cause dry cough by accumulating bradykinin in pulmonary capillaries.',
     metrics: [
       { label: 'Lobes', value: '2 lobes' },
-      { label: 'Total Capacity', value: '~6.0 L' },
-      { label: 'Tidal Volume', value: '500 mL' },
+      { label: 'Tidal Vol.', value: '500 mL' },
+      { label: 'TLC', value: '~6.0 L' },
     ],
   },
   lung_diaphragm: {
     id: 'lung_diaphragm',
     organId: 'lungs',
+    systemId: 'muscular',
     name: 'Thoracic Diaphragm',
+    commonName: 'Diaphragm',
     latinName: 'Diaphragma',
-    system: 'Respiratory',
-    summary:
-      'Dome-shaped musculotendinous partition separating the thoracic and abdominal cavities.',
-    function:
-      'Primary muscle of inspiration; contracts and flattens downward to create negative intrathoracic pressure.',
-    clinicalNote:
-      'Innervated by the phrenic nerve (C3, C4, C5 — "C3, 4, 5 keeps the diaphragm alive").',
+    system: 'Respiratory / Muscular',
+    location: 'Dome-shaped partition between thoracic and abdominal cavities.',
+    structureComposition: 'Skeletal muscle fibers radiating into a central fibrous tendon.',
+    functions: 'Contracts downward to generate negative intrathoracic pressure for quiet inspiration.',
+    physiologicalSignificance: 'Accounts for ~75% of tidal volume work during resting breathing.',
+    clinicalRelevance: 'Phrenic nerve (C3–C5) injury causes diaphragmatic paralysis.',
+    relatedStructures: ['lung_right', 'liver_right_lobe'],
+    bpharmNotes: 'Skeletal muscle relaxants (succinylcholine, rocuronium) paralyze the diaphragm, requiring mechanical ventilation.',
     metrics: [
+      { label: 'Work Share', value: '75%' },
+      { label: 'Nerve', value: 'C3–C5' },
       { label: 'Excursion', value: '1.5–7 cm' },
-      { label: 'Work Share', value: '75% insp.' },
-      { label: 'Innervation', value: 'C3–C5' },
     ],
   },
 
-  // DIGESTIVE
+  // LIVER
   liver_right_lobe: {
     id: 'liver_right_lobe',
-    organId: 'digestive',
-    name: 'Liver — Right Lobe',
+    organId: 'liver',
+    systemId: 'digestive',
+    name: 'Liver — Right Hepatic Lobe',
+    commonName: 'Liver (Right Lobe)',
     latinName: 'Lobus Hepatis Dexter',
     system: 'Digestive / Metabolic',
-    summary:
-      'Largest anatomical lobe of the liver, occupying the right upper quadrant beneath the diaphragm.',
-    function:
-      'Synthesizes plasma proteins and bile, regulates blood glucose via glycogenolysis, and detoxifies portal venous blood.',
-    clinicalNote:
-      'Receives dual blood supply: ~75% from the hepatic portal vein and ~25% from the hepatic artery.',
+    location: 'Right upper quadrant immediately beneath the diaphragm.',
+    structureComposition: 'Hexagonal hepatic lobules of hepatocytes, Kupffer macrophages, and fenestrated sinusoids.',
+    functions: 'Phase I/II xenobiotic metabolism (CYP450), plasma albumin/clotting factor synthesis, and glycogen storage.',
+    physiologicalSignificance: 'Receives 75% portal venous blood from the GI tract for first-pass metabolic processing.',
+    clinicalRelevance: 'Hepatic steatosis (fatty liver) and cirrhosis alter drug half-life and protein binding.',
+    relatedStructures: ['liver_left_lobe', 'gallbladder', 'intestine_small'],
+    bpharmNotes: 'First-pass metabolism in hepatocytes determines oral bioavailability (F) of drugs like propranolol and lidocaine.',
     metrics: [
-      { label: 'Organ Mass', value: '1.4–1.6 kg' },
-      { label: 'Blood Flow', value: '1,450 mL/min' },
-      { label: 'Bile Output', value: '600–1,000 mL/d' },
+      { label: 'Mass', value: '1.4–1.6 kg' },
+      { label: 'Blood Flow', value: '1,450 mL/m' },
+      { label: 'Enzymes', value: 'CYP450' },
     ],
   },
   liver_left_lobe: {
     id: 'liver_left_lobe',
-    organId: 'digestive',
+    organId: 'liver',
+    systemId: 'digestive',
     name: 'Liver — Left Lobe & Falciform Ligament',
+    commonName: 'Liver (Left Lobe)',
     latinName: 'Lobus Hepatis Sinister',
     system: 'Digestive / Metabolic',
-    summary:
-      'Tapered medial lobe extending across the midline anterior to the stomach, separated by the falciform ligament.',
-    function:
-      'Shares identical lobular metabolic architecture with the right lobe, housing Kupffer cells and hepatocytes.',
-    clinicalNote:
-      'Capable of remarkable functional regeneration even after partial surgical resection.',
+    location: 'Epigastric region extending anterior to the stomach.',
+    structureComposition: 'Identical hepatocyte lobular plates separated anatomically by the falciform ligament.',
+    functions: 'Bile acid synthesis, gluconeogenesis, and urea cycle ammonia detoxification.',
+    physiologicalSignificance: 'Maintains fasting blood glucose and synthesizes cholesterol.',
+    clinicalRelevance: 'Liver enzyme elevation (ALT/AST) signals hepatocellular injury (e.g., paracetamol toxicity).',
+    relatedStructures: ['liver_right_lobe', 'stomach_body'],
+    bpharmNotes: 'N-acetylcysteine replenishes hepatic glutathione to detoxify NAPQI in paracetamol overdose.',
     metrics: [
       { label: 'Segments', value: '8 Couinaud' },
-      { label: 'Lobules', value: '~100,000' },
-      { label: 'Regen Time', value: '2–4 weeks' },
+      { label: 'Bile/Day', value: '800 mL' },
+      { label: 'Regen', value: 'High' },
     ],
   },
   gallbladder: {
     id: 'gallbladder',
-    organId: 'digestive',
+    organId: 'liver',
+    systemId: 'digestive',
     name: 'Gallbladder & Biliary Tract',
+    commonName: 'Gallbladder',
     latinName: 'Vesica Biliaris',
-    system: 'Digestive',
-    summary:
-      'Pear-shaped muscular sac nestled beneath the right hepatic lobe, connected via the cystic and common bile ducts.',
-    function:
-      'Stores and concentrates hepatic bile 5–10x, contracting under cholecystokinin (CCK) stimulation to emulsify dietary fats.',
-    clinicalNote:
-      'Concentrated bile salts can precipitate into gallstones (cholelithiasis) when cholesterol-bile ratios shift.',
+    system: 'Digestive System',
+    location: 'Inferior visceral surface of the right hepatic lobe.',
+    structureComposition: 'Smooth-muscle sac lined by absorptive columnar epithelium.',
+    functions: 'Stores and concentrates bile 5–10x; contracts via CCK to emulsify dietary lipids.',
+    physiologicalSignificance: 'Bile salts form micelles essential for fat and lipophilic vitamin (A, D, E, K) absorption.',
+    clinicalRelevance: 'Cholesterol supersaturation causes gallstones (cholelithiasis).',
+    relatedStructures: ['liver_right_lobe', 'duodenum'],
+    bpharmNotes: 'Biliary excretion and enterohepatic recirculation prolong half-life of drugs like morphine and ethinylestradiol.',
     metrics: [
       { label: 'Capacity', value: '30–50 mL' },
-      { label: 'Length', value: '7–10 cm' },
-      { label: 'Concentration', value: '5–10x' },
+      { label: 'Hormone', value: 'CCK' },
+      { label: 'Conc.', value: '5–10x' },
     ],
   },
+
+  // STOMACH
   stomach_esophagus: {
     id: 'stomach_esophagus',
-    organId: 'digestive',
+    organId: 'stomach',
+    systemId: 'digestive',
     name: 'Distal Esophagus & Cardia',
-    latinName: 'Oesophagus et Cardia',
-    system: 'Digestive',
-    summary:
-      'Muscular food-conducting tube piercing the diaphragm at T10 to enter the gastric cardia.',
-    function:
-      'Peristaltic waves propel boluses downward through the lower esophageal sphincter (LES), preventing acid reflux.',
-    clinicalNote:
-      'Transitions from stratified squamous epithelium to simple columnar gastric mucosa at the Z-line.',
+    commonName: 'Esophagus',
+    latinName: 'Oesophagus',
+    system: 'Digestive System',
+    location: 'Posterior mediastinum piercing diaphragm at T10.',
+    structureComposition: 'Stratified squamous mucosa and striated-to-smooth muscularis externa.',
+    functions: 'Propels food boluses into stomach via peristalsis; LES prevents acid reflux.',
+    physiologicalSignificance: 'Coordinates swallowing reflex without aspiration.',
+    clinicalRelevance: 'LES relaxation causes gastroesophageal reflux disease (GERD).',
+    relatedStructures: ['stomach_body', 'lung_diaphragm'],
+    bpharmNotes: 'Oral bisphosphonates require upright posture + full glass of water to prevent esophageal ulceration.',
     metrics: [
-      { label: 'Total Length', value: '~25 cm' },
-      { label: 'LES Pressure', value: '15–30 mmHg' },
-      { label: 'Transit Time', value: '4–8 sec' },
+      { label: 'Length', value: '~25 cm' },
+      { label: 'Transit', value: '4–8 sec' },
+      { label: 'LES Tone', value: '15–30 mmHg' },
     ],
   },
   stomach_body: {
     id: 'stomach_body',
-    organId: 'digestive',
+    organId: 'stomach',
+    systemId: 'digestive',
     name: 'Stomach (Fundus, Body & Pylorus)',
+    commonName: 'Stomach',
     latinName: 'Gaster',
-    system: 'Digestive',
-    summary:
-      'J-shaped muscular reservoir with greater and lesser curvatures, lined internally by folded gastric rugae.',
-    function:
-      'Secretes hydrochloric acid (pH 1.5–2.0) and pepsinogen while churning food into acidic chyme.',
-    clinicalNote:
-      'Three smooth muscle layers (oblique, circular, longitudinal) enable forceful mechanical mixing.',
+    system: 'Digestive System',
+    location: 'Left upper abdominal quadrant.',
+    structureComposition: 'Three smooth-muscle layers and gastric mucosa with parietal (HCl), chief (pepsinogen), and G-cells.',
+    functions: 'Secretes gastric acid (pH 1.5–2.0), intrinsic factor, and churns food into chyme.',
+    physiologicalSignificance: 'Acid denatures proteins and kills ingested pathogens.',
+    clinicalRelevance: 'H. pylori or NSAID-induced prostaglandin loss causes peptic ulcers.',
+    relatedStructures: ['stomach_esophagus', 'duodenum', 'liver_left_lobe'],
+    bpharmNotes: 'Proton pump inhibitors (omeprazole) block H⁺/K⁺-ATPase; gastric pH governs weak-acid vs enteric-coated drug dissolution.',
     metrics: [
-      { label: 'Gastric pH', value: '1.5–2.0' },
-      { label: 'Max Volume', value: '1.5–2.0 L' },
-      { label: 'Acid Output', value: '1.5–2.0 L/d' },
+      { label: 'Fasting pH', value: '1.5–2.0' },
+      { label: 'Max Vol.', value: '1.5–2.0 L' },
+      { label: 'Emptying', value: '1–3 hr' },
     ],
   },
   duodenum: {
     id: 'duodenum',
-    organId: 'digestive',
+    organId: 'stomach',
+    systemId: 'digestive',
     name: 'Duodenum',
+    commonName: 'First Small Intestine Segment',
     latinName: 'Duodenum',
-    system: 'Digestive',
-    summary:
-      'C-shaped proximal segment of the small intestine receiving chyme from the pylorus, bile, and pancreatic enzymes.',
-    function:
-      'Neutralizes gastric acid via Brunner’s gland bicarbonate and initiates rapid macronutrient absorption.',
-    clinicalNote:
-      'The major duodenal papilla (ampulla of Vater) is the shared entry point for bile and pancreatic juice.',
+    system: 'Digestive System',
+    location: 'C-shaped retroperitoneal loop curving around the pancreatic head.',
+    structureComposition: 'Villi-lined mucosa with Brunner’s alkaline mucus glands.',
+    functions: 'Neutralizes gastric acid and mixes chyme with bile and pancreatic enzymes.',
+    physiologicalSignificance: 'Primary site for iron, calcium, and rapid drug dissolution/absorption.',
+    clinicalRelevance: 'Duodenal ulcers are strongly linked to H. pylori infection.',
+    relatedStructures: ['stomach_body', 'gallbladder', 'intestine_small'],
+    bpharmNotes: 'Enteric-coated tablets dissolve here as luminal pH rises from 2.0 to 6.5.',
     metrics: [
       { label: 'Length', value: '25–30 cm' },
       { label: 'Luminal pH', value: '6.0–7.0' },
-      { label: 'Parts', value: '4 segments' },
+      { label: 'Glands', value: 'Brunner’s' },
+    ],
+  },
+
+  // INTESTINES
+  intestine_small: {
+    id: 'intestine_small',
+    organId: 'intestines',
+    systemId: 'digestive',
+    name: 'Jejunum & Ileum (Small Intestine)',
+    commonName: 'Small Intestine',
+    latinName: 'Jejunum et Ileum',
+    system: 'Digestive System',
+    location: 'Central umbilical and hypogastric abdominal cavity.',
+    structureComposition: 'Circular folds (plicae circulares), villi, and microvilli creating ~200 m² absorptive area.',
+    functions: 'Completes enzymatic digestion and absorbs carbohydrates, amino acids, lipids, and vitamin B₁₂.',
+    physiologicalSignificance: 'Primary site of oral drug absorption into the mesenteric portal circulation.',
+    clinicalRelevance: 'Celiac disease or Crohn’s ileitis causes malabsorption.',
+    relatedStructures: ['duodenum', 'intestine_colon', 'liver_right_lobe'],
+    bpharmNotes: 'Large surface area + rich blood flow make the small intestine the main absorption window for BCS Class I–IV drugs; contains P-gp & CYP3A4.',
+    metrics: [
+      { label: 'Length', value: '~6 meters' },
+      { label: 'Area', value: '~200 m²' },
+      { label: 'pH Range', value: '6.0–7.4' },
+    ],
+  },
+  intestine_colon: {
+    id: 'intestine_colon',
+    organId: 'intestines',
+    systemId: 'digestive',
+    name: 'Large Intestine (Colon)',
+    commonName: 'Colon',
+    latinName: 'Intestinum Crassum',
+    system: 'Digestive System',
+    location: 'Frames the small intestine (cecum, ascending, transverse, descending, sigmoid).',
+    structureComposition: 'Haustrated smooth muscle with taeniae coli and abundant commensal microbiota.',
+    functions: 'Reabsorbs water and electrolytes; ferments fiber and synthesizes vitamin K.',
+    physiologicalSignificance: 'Converts ~1.5 L of liquid ileal chyme into solid feces.',
+    clinicalRelevance: 'Antibiotic disruption of colonic flora can permit C. difficile overgrowth.',
+    relatedStructures: ['intestine_small', 'intestine_appendix'],
+    bpharmNotes: 'Sustained-release and colon-targeted prodrugs (sulfasalazine → 5-ASA via bacterial azoreductase) act here.',
+    metrics: [
+      { label: 'Length', value: '~1.5 meters' },
+      { label: 'Water Abs.', value: '90% rem.' },
+      { label: 'Transit', value: '12–48 hr' },
+    ],
+  },
+  intestine_appendix: {
+    id: 'intestine_appendix',
+    organId: 'intestines',
+    systemId: 'digestive',
+    name: 'Vermiform Appendix & Cecum',
+    commonName: 'Appendix',
+    latinName: 'Appendix Vermiformis',
+    system: 'Digestive / Lymphoid',
+    location: 'Right iliac fossa, attached to the posteromedial cecum.',
+    structureComposition: 'Blind-ended muscular tube rich in gut-associated lymphoid tissue (GALT).',
+    functions: 'Immune surveillance and reservoir for beneficial colonic flora.',
+    physiologicalSignificance: 'Supports mucosal IgA immunity.',
+    clinicalRelevance: 'Luminal obstruction leads to acute appendicitis.',
+    relatedStructures: ['intestine_colon'],
+    bpharmNotes: 'McBurney’s point tenderness is a classic surgical landmark in the right lower quadrant.',
+    metrics: [
+      { label: 'Length', value: '6–10 cm' },
+      { label: 'Tissue', value: 'GALT' },
+      { label: 'Region', value: 'RLQ' },
     ],
   },
 
@@ -564,91 +909,779 @@ export const ANATOMICAL_PARTS: Record<string, AnatomicalPartInfo> = {
   kidney_left: {
     id: 'kidney_left',
     organId: 'kidneys',
+    systemId: 'urinary',
     name: 'Left Kidney',
+    commonName: 'Left Kidney',
     latinName: 'Ren Sinister',
-    system: 'Renal',
-    summary:
-      'Bean-shaped retroperitoneal organ positioned slightly higher than the right kidney (T12–L3) due to the liver.',
-    function:
-      'Filters blood plasma through ~1 million nephrons to excrete nitrogenous wastes and regulate electrolyte homeostasis.',
-    clinicalNote:
-      'The left renal vein is longer than the right and crosses anterior to the abdominal aorta.',
+    system: 'Urinary System',
+    location: 'Retroperitoneal T12–L3, slightly higher than the right kidney.',
+    structureComposition: 'Outer renal cortex, inner medullary pyramids, and ~1 million functional nephrons.',
+    functions: 'Glomerular filtration, tubular reabsorption/secretion, acid-base and fluid balance.',
+    physiologicalSignificance: 'Filters ~180 L of plasma daily to excrete ~1.5 L urine.',
+    clinicalRelevance: 'Renal impairment requires dose adjustment of renally cleared drugs (aminoglycosides, vancomycin).',
+    relatedStructures: ['kidney_right', 'renal_vessels', 'ureters'],
+    bpharmNotes: 'Loop diuretics (furosemide) inhibit NKCC2 in the thick ascending limb; thiazides act on DCT.',
     metrics: [
-      { label: 'Nephrons', value: '~1.0M each' },
-      { label: 'Combined GFR', value: '125 mL/min' },
-      { label: 'Renal Blood', value: '20–25% CO' },
+      { label: 'Nephrons', value: '~1.0M' },
+      { label: 'GFR', value: '125 mL/m' },
+      { label: 'CO Share', value: '20–25%' },
     ],
   },
   kidney_right: {
     id: 'kidney_right',
     organId: 'kidneys',
+    systemId: 'urinary',
     name: 'Right Kidney',
+    commonName: 'Right Kidney',
     latinName: 'Ren Dexter',
-    system: 'Renal',
-    summary:
-      'Positioned 1–2 cm lower than the left kidney beneath the right lobe of the liver.',
-    function:
-      'Produces erythropoietin (stimulating RBC synthesis) and activates vitamin D (calcitriol) alongside filtration.',
-    clinicalNote:
-      'Each kidney measures approximately 11 cm long, 6 cm wide, and 3 cm thick.',
+    system: 'Urinary System',
+    location: 'Retroperitoneal, displaced 1–2 cm inferiorly by the liver.',
+    structureComposition: 'Renal capsule, cortex, medulla, calyces, and renal pelvis.',
+    functions: 'Secretes erythropoietin (EPO), renin (RAAS), and activates vitamin D.',
+    physiologicalSignificance: 'Maintains long-term arterial blood pressure via RAAS and sodium balance.',
+    clinicalRelevance: 'NSAIDs constrict afferent arterioles, risking acute kidney injury in dehydrated patients.',
+    relatedStructures: ['kidney_left', 'liver_right_lobe', 'adrenal_glands'],
+    bpharmNotes: 'ACE inhibitors dilate the efferent arteriole, reducing intraglomerular pressure in diabetic nephropathy.',
     metrics: [
-      { label: 'Dimensions', value: '11 × 6 × 3 cm' },
-      { label: 'Mass', value: '135–150 g' },
-      { label: 'Filtrate/Day', value: '~180 L' },
+      { label: 'Size', value: '11×6×3 cm' },
+      { label: 'Mass', value: '140 g' },
+      { label: 'Filtrate', value: '180 L/day' },
     ],
   },
   adrenal_glands: {
     id: 'adrenal_glands',
     organId: 'kidneys',
+    systemId: 'endocrine',
     name: 'Adrenal (Suprarenal) Glands',
+    commonName: 'Adrenal Glands',
     latinName: 'Glandulae Suprarenales',
-    system: 'Endocrine',
-    summary:
-      'Pyramidal endocrine glands resting atop the superior poles of both kidneys within the renal fascia.',
-    function:
-      'Outer cortex secretes cortisol and aldosterone; inner medulla releases epinephrine and norepinephrine.',
-    clinicalNote:
-      'Essential for stress response, vascular tone, and sodium-potassium balance.',
+    system: 'Endocrine System',
+    location: 'Superior poles of both kidneys.',
+    structureComposition: 'Outer steroidogenic cortex (3 zones) and inner neuroendocrine chromaffin medulla.',
+    functions: 'Secretes aldosterone, cortisol, androgens (cortex) and epinephrine/norepinephrine (medulla).',
+    physiologicalSignificance: 'Drives sympathetic fight-or-flight response and mineralocorticoid volume retention.',
+    clinicalRelevance: 'Chronic exogenous corticosteroid therapy suppresses the HPA axis and adrenal cortex.',
+    relatedStructures: ['kidney_left', 'kidney_right'],
+    bpharmNotes: 'Spironolactone antagonizes aldosterone at mineralocorticoid receptors in the collecting duct.',
     metrics: [
-      { label: 'Mass', value: '4–5 g each' },
-      { label: 'Cortex Zones', value: '3 layers' },
-      { label: 'Hormones', value: 'Cortisol / Epi' },
+      { label: 'Mass', value: '4–5 g' },
+      { label: 'Zones', value: 'G-F-R' },
+      { label: 'Medulla', value: 'Epi / NE' },
     ],
   },
   renal_vessels: {
     id: 'renal_vessels',
     organId: 'kidneys',
+    systemId: 'cardiovascular',
     name: 'Abdominal Aorta, IVC & Renal Pedicles',
+    commonName: 'Renal Blood Vessels',
     latinName: 'Vasa Renalia',
-    system: 'Renal / Vascular',
-    summary:
-      'High-flow vascular trunks branching laterally from the aorta and inferior vena cava into each renal hilum.',
-    function:
-      'Delivers ~1.1 liters of blood per minute to the kidneys to maintain glomerular filtration pressure.',
-    clinicalNote:
-      'Renal artery stenosis can trigger secondary hypertension via renin-angiotensin-aldosterone activation.',
+    system: 'Cardiovascular / Urinary',
+    location: 'Midline retroperitoneum branching laterally into the renal hila.',
+    structureComposition: 'High-flow renal arteries and low-resistance renal veins.',
+    functions: 'Delivers ~1.1 L/min of blood to maintain glomerular filtration pressure.',
+    physiologicalSignificance: 'Renal blood flow is autoregulated between 80–180 mmHg MAP.',
+    clinicalRelevance: 'Renal artery stenosis triggers renin-mediated secondary hypertension.',
+    relatedStructures: ['kidney_left', 'kidney_right'],
+    bpharmNotes: 'OAT/OCT transporters in peritubular capillaries actively secrete anionic/cationic drugs like penicillin.',
     metrics: [
-      { label: 'Total Flow', value: '1.1 L/min' },
-      { label: 'O₂ Difference', value: 'Low (1.4 mL)' },
-      { label: 'Hilum Order', value: 'V-A-P (ant-post)' },
+      { label: 'Total RBF', value: '1.1 L/min' },
+      { label: 'FF', value: '~20%' },
+      { label: 'Hilum', value: 'V-A-P' },
     ],
   },
   ureters: {
     id: 'ureters',
     organId: 'kidneys',
-    name: 'Ureters',
+    systemId: 'urinary',
+    name: 'Ureters & Urinary Bladder',
+    commonName: 'Ureters',
     latinName: 'Ureteres',
-    system: 'Renal',
-    summary:
-      'Narrow fibromuscular tubes descending retroperitoneally from each renal pelvis to the urinary bladder.',
-    function:
-      'Propels urine via rhythmic smooth-muscle peristalsis rather than gravity alone.',
-    clinicalNote:
-      'Three physiological constrictions (UPJ, pelvic brim, UVJ) are common sites for kidney stone impaction.',
+    system: 'Urinary System',
+    location: 'Descend retroperitoneally from renal pelvis to pelvic bladder.',
+    structureComposition: 'Transitional epithelium (urothelium) and helical smooth muscle.',
+    functions: 'Propels urine via rhythmic peristaltic waves.',
+    physiologicalSignificance: 'Oblique entry into bladder prevents vesicoureteral reflux.',
+    clinicalRelevance: 'Kidney stones lodge at three anatomical constrictions, causing severe renal colic.',
+    relatedStructures: ['kidney_left', 'kidney_right'],
+    bpharmNotes: 'α₁-blockers (tamsulosin) relax distal ureteral smooth muscle to aid stone passage.',
     metrics: [
       { label: 'Length', value: '25–30 cm' },
-      { label: 'Lumen Width', value: '3–4 mm' },
-      { label: 'Peristalsis', value: '1–5 /min' },
+      { label: 'Lumen', value: '3–4 mm' },
+      { label: 'Waves', value: '1–5 /min' },
+    ],
+  },
+
+  // EYE
+  eye_cornea_iris: {
+    id: 'eye_cornea_iris',
+    organId: 'eye',
+    systemId: 'nervous',
+    name: 'Cornea, Iris & Pupil',
+    commonName: 'Front of Eye',
+    latinName: 'Cornea et Iris',
+    system: 'Special Senses',
+    location: 'Anterior 1/6 of the eyeball.',
+    structureComposition: 'Avascular transparent collagenous cornea; pigmented iris with sphincter (M₃) and dilator (α₁) muscles.',
+    functions: 'Cornea provides ~70% of refractive power; iris regulates light entry via pupil diameter.',
+    physiologicalSignificance: 'Autonomic balance controls miosis (parasympathetic) vs mydriasis (sympathetic).',
+    clinicalRelevance: 'Closed-angle glaucoma impairs aqueous humor drainage at the iridocorneal angle.',
+    relatedStructures: ['eye_lens', 'eye_sclera'],
+    bpharmNotes: 'Pilocarpine (M₃ agonist) induces miosis; tropicamide (M₃ antagonist) and phenylephrine (α₁) dilate the pupil for fundoscopy.',
+    metrics: [
+      { label: 'Refraction', value: '+43 D' },
+      { label: 'IOP', value: '10–21 mmHg' },
+      { label: 'Pupil', value: '2–8 mm' },
+    ],
+  },
+  eye_sclera: {
+    id: 'eye_sclera',
+    organId: 'eye',
+    systemId: 'nervous',
+    name: 'Sclera & Extraocular Coat',
+    commonName: 'White of Eye',
+    latinName: 'Sclera',
+    system: 'Special Senses',
+    location: 'Posterior 5/6 fibrous outer tunic of the globe.',
+    structureComposition: 'Dense crisscrossing type I collagen fibers.',
+    functions: 'Maintains spherical globe shape and anchors extraocular muscles.',
+    physiologicalSignificance: 'Resists intraocular pressure fluctuations.',
+    clinicalRelevance: 'Jaundice causes yellow scleral icterus due to bilirubin binding elastin.',
+    relatedStructures: ['eye_cornea_iris', 'eye_optic_nerve'],
+    bpharmNotes: 'Topical ophthalmic drops face rapid nasolacrimal drainage; timolol drops can cause systemic β-blockade.',
+    metrics: [
+      { label: 'Globe Dia.', value: '~24 mm' },
+      { label: 'Thickness', value: '0.3–1.0 mm' },
+      { label: 'Coat', value: 'Fibrous' },
+    ],
+  },
+  eye_lens: {
+    id: 'eye_lens',
+    organId: 'eye',
+    systemId: 'nervous',
+    name: 'Crystalline Lens',
+    commonName: 'Eye Lens',
+    latinName: 'Lens Crystallina',
+    system: 'Special Senses',
+    location: 'Immediately posterior to the iris, suspended by zonular fibers.',
+    structureComposition: 'Transparent avascular crystallin protein fibers.',
+    functions: 'Changes curvature (accommodation) via ciliary muscle contraction for near focus.',
+    physiologicalSignificance: 'Provides fine ~15–20 diopter refractive adjustment.',
+    clinicalRelevance: 'Protein aggregation and oxidative damage cause cataracts.',
+    relatedStructures: ['eye_cornea_iris', 'eye_retina'],
+    bpharmNotes: 'Chronic systemic corticosteroids increase risk of posterior subcapsular cataracts.',
+    metrics: [
+      { label: 'Power', value: '+15–20 D' },
+      { label: 'Aqueous', value: '2.5 µL/m' },
+      { label: 'Focus', value: 'Ciliary M₃' },
+    ],
+  },
+  eye_retina: {
+    id: 'eye_retina',
+    organId: 'eye',
+    systemId: 'nervous',
+    name: 'Retina & Macula',
+    commonName: 'Retina',
+    latinName: 'Retina',
+    system: 'Special Senses / CNS',
+    location: 'Innermost posterior neural layer of the eye.',
+    structureComposition: '10-layer neural tissue with rod (scotopic) and cone (photopic/color) photoreceptors.',
+    functions: 'Phototransduction of photons into graded potentials and retinal ganglion action potentials.',
+    physiologicalSignificance: 'Fovea centralis provides highest visual acuity.',
+    clinicalRelevance: 'Diabetic retinopathy damages retinal microvasculature.',
+    relatedStructures: ['eye_optic_nerve', 'brain_occipital'],
+    bpharmNotes: 'Anti-VEGF biologics (ranibizumab) treat wet age-related macular degeneration and diabetic macular edema.',
+    metrics: [
+      { label: 'Rods', value: '~120M' },
+      { label: 'Cones', value: '~6M' },
+      { label: 'Vitamin', value: 'Retinal (A)' },
+    ],
+  },
+  eye_optic_nerve: {
+    id: 'eye_optic_nerve',
+    organId: 'eye',
+    systemId: 'nervous',
+    name: 'Optic Nerve (CN II)',
+    commonName: 'Optic Nerve',
+    latinName: 'Nervus Opticus',
+    system: 'Nervous System',
+    location: 'Exits posterior globe at the optic disc toward the optic chiasm.',
+    structureComposition: '~1.2 million retinal ganglion cell axons myelinated by oligodendrocytes.',
+    functions: 'Transmits visual information to the thalamic LGN and midbrain.',
+    physiologicalSignificance: 'Forms the afferent limb of the pupillary light reflex.',
+    clinicalRelevance: 'Elevated IOP in glaucoma compresses optic nerve fibers, causing peripheral vision loss.',
+    relatedStructures: ['eye_retina', 'brain_occipital'],
+    bpharmNotes: 'Ethambutol (anti-TB) can cause dose-dependent optic neuritis; prostaglandin analogs (latanoprost) lower IOP.',
+    metrics: [
+      { label: 'Axons', value: '~1.2M' },
+      { label: 'Cranial N.', value: 'CN II' },
+      { label: 'Myelin', value: 'Oligodend.' },
+    ],
+  },
+
+  // EAR
+  ear_pinna_canal: {
+    id: 'ear_pinna_canal',
+    organId: 'ear',
+    systemId: 'nervous',
+    name: 'Auricle (Pinna) & External Auditory Canal',
+    commonName: 'Outer Ear',
+    latinName: 'Auricula et Meatus Acusticus Externus',
+    system: 'Special Senses',
+    location: 'Lateral temporal region leading to the tympanic membrane.',
+    structureComposition: 'Elastic cartilage covered by skin with ceruminous (wax) glands.',
+    functions: 'Funnels and localizes sound waves; protects the eardrum.',
+    physiologicalSignificance: 'Resonates frequencies around 2–5 kHz (speech intelligibility).',
+    clinicalRelevance: 'Cerumen impaction or otitis externa ("swimmer’s ear") causes conductive hearing loss.',
+    relatedStructures: ['ear_tympanic_ossicles'],
+    bpharmNotes: 'Topical fluoroquinolone/steroid otic drops treat bacterial otitis externa; avoid aminoglycoside drops if eardrum is perforated.',
+    metrics: [
+      { label: 'Canal Len.', value: '2.5 cm' },
+      { label: 'Resonance', value: '2–5 kHz' },
+      { label: 'Cartilage', value: 'Elastic' },
+    ],
+  },
+  ear_tympanic_ossicles: {
+    id: 'ear_tympanic_ossicles',
+    organId: 'ear',
+    systemId: 'nervous',
+    name: 'Tympanic Membrane & Ossicles',
+    commonName: 'Eardrum & Middle Ear Bones',
+    latinName: 'Membrana Tympani et Ossicula Auditus',
+    system: 'Special Senses',
+    location: 'Air-filled tympanic cavity within the temporal bone.',
+    structureComposition: 'Conical eardrum linked to malleus, incus, and stapes.',
+    functions: 'Impedance-matches airborne sound vibrations to fluid-filled inner ear (~20x pressure amplification).',
+    physiologicalSignificance: 'Eustachian tube equalizes middle-ear pressure with the nasopharynx.',
+    clinicalRelevance: 'Otitis media is common in children due to shorter, horizontal Eustachian tubes.',
+    relatedStructures: ['ear_pinna_canal', 'ear_cochlea'],
+    bpharmNotes: 'Amoxicillin is first-line for acute bacterial otitis media; nasal decongestants can relieve Eustachian obstruction.',
+    metrics: [
+      { label: 'Bones', value: 'M-I-S (3)' },
+      { label: 'Gain', value: '~20x' },
+      { label: 'Range', value: '20–20k Hz' },
+    ],
+  },
+  ear_cochlea: {
+    id: 'ear_cochlea',
+    organId: 'ear',
+    systemId: 'nervous',
+    name: 'Cochlea & Organ of Corti',
+    commonName: 'Inner Ear Hearing Spiral',
+    latinName: 'Cochlea',
+    system: 'Special Senses',
+    location: 'Anterior bony labyrinth of the petrous temporal bone.',
+    structureComposition: '2.5-turn spiral canal containing perilymph, endolymph, and stereociliated hair cells.',
+    functions: 'Tonotopically transduces sound frequencies (base = high, apex = low) into CN VIII impulses.',
+    physiologicalSignificance: 'Endocochlear K⁺ gradient powers rapid mechanoelectrical transduction.',
+    clinicalRelevance: 'Sensorineural hearing loss results from hair-cell degeneration.',
+    relatedStructures: ['ear_tympanic_ossicles', 'ear_semicircular', 'brain_temporal'],
+    bpharmNotes: 'Aminoglycosides (gentamicin), loop diuretics (furosemide), and cisplatin are classic ototoxic drugs.',
+    metrics: [
+      { label: 'Turns', value: '2.5 turns' },
+      { label: 'Cranial N.', value: 'CN VIII' },
+      { label: 'Hair Cells', value: '~15,500' },
+    ],
+  },
+  ear_semicircular: {
+    id: 'ear_semicircular',
+    organId: 'ear',
+    systemId: 'nervous',
+    name: 'Semicircular Canals & Vestibule',
+    commonName: 'Balance Apparatus',
+    latinName: 'Canales Semicirculares',
+    system: 'Special Senses',
+    location: 'Posterior-superior inner ear oriented in 3 orthogonal planes.',
+    structureComposition: 'Anterior, posterior, and lateral membranous canals with ampullary cupulae.',
+    functions: 'Detects angular head acceleration (canals) and linear gravity/tilt (utricle & saccule).',
+    physiologicalSignificance: 'Drives vestibulo-ocular reflex (VOR) to stabilize gaze during movement.',
+    clinicalRelevance: 'Benign paroxysmal positional vertigo (BPPV) or endolymphatic hydrops (Ménière’s) causes vertigo.',
+    relatedStructures: ['ear_cochlea', 'brain_cerebellum'],
+    bpharmNotes: 'Antihistamines (meclizine, dimenhydrinate) and betahistine suppress vestibular vertigo and motion sickness.',
+    metrics: [
+      { label: 'Planes', value: '3 orthogonal' },
+      { label: 'Senses', value: 'Angular/Lin' },
+      { label: 'Relay', value: 'Vestibular' },
+    ],
+  },
+
+  // SKIN
+  skin_epidermis: {
+    id: 'skin_epidermis',
+    organId: 'skin',
+    systemId: 'integumentary',
+    name: 'Epidermis (Stratum Corneum → Basale)',
+    commonName: 'Outer Skin Layer',
+    latinName: 'Epidermis',
+    system: 'Integumentary System',
+    location: 'Superficial avascular barrier of the body.',
+    structureComposition: 'Keratinized stratified squamous epithelium with keratinocytes, melanocytes, and Langerhans cells.',
+    functions: 'Waterproof permeability barrier, UV photoprotection, and antimicrobial defense.',
+    physiologicalSignificance: 'Stratum corneum lipid matrix is the rate-limiting barrier for transdermal drug delivery.',
+    clinicalRelevance: 'Hyperproliferation of keratinocytes causes psoriasis plaques.',
+    relatedStructures: ['skin_dermis', 'skin_follicle_gland'],
+    bpharmNotes: 'Transdermal patches (fentanyl, nicotine, nitroglycerin) require lipophilic, low-MW drugs (<500 Da) to cross stratum corneum.',
+    metrics: [
+      { label: 'Thickness', value: '0.05–1.5 mm' },
+      { label: 'Turnover', value: '~28 days' },
+      { label: 'Barrier', value: 'Str. Corn.' },
+    ],
+  },
+  skin_dermis: {
+    id: 'skin_dermis',
+    organId: 'skin',
+    systemId: 'integumentary',
+    name: 'Dermis & Capillary Plexus',
+    commonName: 'Middle Skin Layer',
+    latinName: 'Dermis (Corium)',
+    system: 'Integumentary System',
+    location: 'Deep to the epidermal basement membrane.',
+    structureComposition: 'Dense irregular collagen/elastin network, fibroblasts, mast cells, sensory corpuscles, and capillaries.',
+    functions: 'Provides tensile strength, thermoregulatory vasodilation/vasoconstriction, and tactile sensation.',
+    physiologicalSignificance: 'Dermal capillary bed absorbs transdermal and intradermal medications.',
+    clinicalRelevance: 'Mast cell degranulation releases histamine, producing urticarial wheal-and-flare reactions.',
+    relatedStructures: ['skin_epidermis', 'skin_hypodermis'],
+    bpharmNotes: 'Intradermal (ID) injections (e.g., tuberculin PPD) are placed at 10–15° into the dermis; H₁-antihistamines block dermal histamine.',
+    metrics: [
+      { label: 'Thickness', value: '1–4 mm' },
+      { label: 'Fibers', value: 'Collagen I' },
+      { label: 'ID Angle', value: '10–15°' },
+    ],
+  },
+  skin_hypodermis: {
+    id: 'skin_hypodermis',
+    organId: 'skin',
+    systemId: 'integumentary',
+    name: 'Hypodermis (Subcutaneous Tissue)',
+    commonName: 'Subcutaneous Fat Layer',
+    latinName: 'Tela Subcutanea',
+    system: 'Integumentary System',
+    location: 'Deepest layer anchoring dermis to underlying muscle fascia.',
+    structureComposition: 'Loose areolar connective tissue and adipose lobules.',
+    functions: 'Thermal insulation, mechanical cushioning, and triglyceride energy storage.',
+    physiologicalSignificance: 'Slower vascular perfusion enables sustained absorption of subcutaneous depot drugs.',
+    clinicalRelevance: 'Lipodystrophy can occur if insulin injection sites are not rotated.',
+    relatedStructures: ['skin_dermis', 'muscular_pectoral'],
+    bpharmNotes: 'Insulin, heparin, and monoclonal antibodies are administered subcutaneously (SC at 45–90°) into the hypodermis.',
+    metrics: [
+      { label: 'SC Angle', value: '45–90°' },
+      { label: 'Tissue', value: 'Adipose' },
+      { label: 'Perfusion', value: 'Slow/Steady' },
+    ],
+  },
+  skin_follicle_gland: {
+    id: 'skin_follicle_gland',
+    organId: 'skin',
+    systemId: 'integumentary',
+    name: 'Hair Follicle & Eccrine Sweat Gland',
+    commonName: 'Skin Appendages',
+    latinName: 'Folliculus Pili et Glandula Sudorifera',
+    system: 'Integumentary System',
+    location: 'Embedded within the dermis extending into hypodermis.',
+    structureComposition: 'Invaginated epidermal follicle, sebaceous holocrine gland, arrector pili muscle, and coiled sweat gland.',
+    functions: 'Evaporative cooling (eccrine sweat) and sebum lipid lubrication.',
+    physiologicalSignificance: 'Eccrine glands are innervated by sympathetic cholinergic (M₃) fibers.',
+    clinicalRelevance: 'Sebaceous hypersecretion and C. acnes colonization cause acne vulgaris.',
+    relatedStructures: ['skin_epidermis', 'skin_dermis'],
+    bpharmNotes: 'Topical retinoids (tretinoin) and benzoyl peroxide normalize follicular keratinization in acne.',
+    metrics: [
+      { label: 'Sweat NT', value: 'ACh (M₃)' },
+      { label: 'Glands', value: '~2–4M' },
+      { label: 'Sebum', value: 'Holocrine' },
     ],
   },
 };
+
+// ---------------------------------------------------------------------------
+// PHYSIOLOGY LABORATORY SIMULATIONS (8)
+// ---------------------------------------------------------------------------
+export interface PhysiologySim {
+  id: string;
+  title: string;
+  organId: OrganSystemId;
+  durationLabel: string;
+  summary: string;
+  steps: string[];
+  bpharmNote: string;
+  disclaimer: string;
+}
+
+export const PHYSIOLOGY_SIMS: PhysiologySim[] = [
+  {
+    id: 'cardiac_cycle',
+    title: 'Cardiac Cycle & Heartbeat',
+    organId: 'heart',
+    durationLabel: '0.8 s / cycle (75 bpm)',
+    summary: 'Coordinated mechanical contraction (systole) and relaxation (diastole) driven by SA-to-AV nodal conduction.',
+    steps: [
+      '1. Atrial Systole (0.1 s): SA node fires; atria contract to complete final 20% ventricular filling.',
+      '2. Ventricular Systole (0.3 s): AV valves close ("Lub" S1); ventricles eject ~70 mL into aorta and pulmonary trunk.',
+      '3. Ventricular Diastole (0.4 s): Semilunar valves close ("Dub" S2); myocardium relaxes and coronary perfusion peaks.',
+    ],
+    bpharmNote: 'Class IV calcium-channel blockers (verapamil) slow AV nodal conduction; digoxin increases systolic contractility.',
+    disclaimer: 'Simplified 3D mechanical timing for educational visualization; not an ECG or clinical hemodynamic monitor.',
+  },
+  {
+    id: 'blood_circulation',
+    title: 'Systemic & Pulmonary Circulation',
+    organId: 'heart',
+    durationLabel: 'CO ~5.0 L/min',
+    summary: 'Dual-loop circulation: deoxygenated blood travels RV → Lungs → LA, while oxygenated blood travels LV → Body → RA.',
+    steps: [
+      '1. Pulmonary Circuit: Right ventricle pumps low-O₂ blood (blue) via pulmonary arteries to alveolar capillaries.',
+      '2. Oxygenation: Hemoglobin binds O₂; oxygenated blood (red) returns via pulmonary veins to left atrium.',
+      '3. Systemic Circuit: Left ventricle ejects high-O₂ blood through the aortic arch to brain, viscera, and limbs.',
+    ],
+    bpharmNote: 'Cardiac output (CO = HR × SV) and regional organ blood flow govern drug distribution kinetics.',
+    disclaimer: 'Particle flow vectors illustrate directional circuits rather than actual laminar/turbulent Reynolds velocities.',
+  },
+  {
+    id: 'pulmonary_ventilation',
+    title: 'Pulmonary Ventilation Mechanics',
+    organId: 'lungs',
+    durationLabel: '12–16 breaths/min',
+    summary: 'Boyle’s law pressure-volume changes: diaphragmatic descent creates negative intrapleural pressure, drawing air inward.',
+    steps: [
+      '1. Inspiration (Active): Diaphragm contracts downward and external intercostals elevate ribs, expanding thoracic volume.',
+      '2. Air Inflow: Alveolar pressure drops (-1 mmHg below atmospheric), drawing 500 mL tidal air through trachea.',
+      '3. Expiration (Passive): Elastic recoil of lung parenchyma compresses alveoli (+1 mmHg), expelling air.',
+    ],
+    bpharmNote: 'Peak inspiratory flow rate determines aerosol deposition efficiency of dry-powder inhalers (DPIs).',
+    disclaimer: 'Lung expansion amplitude is visually amplified for clarity; normal quiet tidal volume is ~500 mL.',
+  },
+  {
+    id: 'gas_exchange',
+    title: 'Alveolar Gas Exchange (O₂ / CO₂)',
+    organId: 'lungs',
+    durationLabel: '0.25 s transit',
+    summary: 'Passive diffusion down partial-pressure gradients across the 0.5 µm alveolar-capillary respiratory membrane.',
+    steps: [
+      '1. Oxygen Diffusion: Alveolar pO₂ (104 mmHg) drives O₂ into capillary blood (40 mmHg) to saturate hemoglobin (98%).',
+      '2. Carbon Dioxide Diffusion: Venous pCO₂ (45 mmHg) diffuses into alveoli (40 mmHg) for exhalation.',
+      '3. Acid-Base Balance: Rapid CO₂ elimination regulates blood pH via the bicarbonate buffer system.',
+    ],
+    bpharmNote: 'Volatile anesthetics (sevoflurane) follow identical partial-pressure diffusion gradients across alveoli.',
+    disclaimer: 'Conceptual diffusion representation; actual gas equilibration occurs across ~300 million microscopic alveoli.',
+  },
+  {
+    id: 'digestion',
+    title: 'GI Motility & Digestion',
+    organId: 'intestines',
+    durationLabel: 'Peristalsis 3/min',
+    summary: 'Coordinated smooth-muscle peristalsis and segmentation propelling chyme through stomach, small intestine, and colon.',
+    steps: [
+      '1. Gastric Mixing: Stomach churns bolus with HCl and pepsin into acidic chyme.',
+      '2. Small Intestinal Absorption: Segmentation mixes chyme with bile and pancreatic enzymes across villi.',
+      '3. Colonic Water Recovery: Haustral contractions absorb water and electrolytes.',
+    ],
+    bpharmNote: 'Prokinetic agents (metoclopramide) accelerate gastric emptying; loperamide (µ-opioid) slows intestinal peristalsis.',
+    disclaimer: 'Wave motion is accelerated for demonstration; normal GI transit spans 12–48 hours.',
+  },
+  {
+    id: 'kidney_filtration',
+    title: 'Renal Glomerular Filtration & Clearance',
+    organId: 'kidneys',
+    durationLabel: 'GFR 125 mL/min',
+    summary: 'Ultrafiltration of blood plasma in renal corpuscles followed by tubular reabsorption/secretion and ureteral transport.',
+    steps: [
+      '1. Filtration: Renal arteries deliver 20–25% of cardiac output; ~125 mL/min of plasma filters into Bowman’s capsule.',
+      '2. Tubular Processing: 99% of water and glucose are reabsorbed; organic acids/bases are secreted.',
+      '3. Excretion: Concentrated urine flows down ureters via peristalsis to the bladder.',
+    ],
+    bpharmNote: 'Renal clearance (CL_R = Filtration + Secretion − Reabsorption) dictates maintenance dosing of water-soluble drugs.',
+    disclaimer: 'Macroscopic kidney and ureter flow visualization; nephron filtration occurs at microscopic scale.',
+  },
+  {
+    id: 'nerve_impulse',
+    title: 'Nerve Impulse (Action Potential)',
+    organId: 'body',
+    durationLabel: 'Up to 120 m/s',
+    summary: 'Rapid voltage-gated Na⁺ depolarization and K⁺ repolarization propagating along myelinated CNS/PNS tracts.',
+    steps: [
+      '1. Resting Potential (-70 mV): Na⁺/K⁺-ATPase maintains high extracellular Na⁺ and intracellular K⁺.',
+      '2. Depolarization (+30 mV): Threshold (-55 mV) opens voltage-gated Na⁺ channels; impulse jumps between Nodes of Ranvier.',
+      '3. Repolarization & Synapse: K⁺ efflux restores polarity; Ca²⁺ influx triggers neurotransmitter release at axon terminal.',
+    ],
+    bpharmNote: 'Local anesthetics (lidocaine) block voltage-gated Na⁺ channels from the intracellular side to halt pain conduction.',
+    disclaimer: 'Animated light pulses along nerve tracts represent saltatory conduction speed scaled for human observation.',
+  },
+  {
+    id: 'muscle_contraction',
+    title: 'Skeletal Muscle Contraction',
+    organId: 'body',
+    durationLabel: 'Cross-bridge cycle',
+    summary: 'Excitation-contraction coupling: motor neuron ACh triggers sarcoplasmic Ca²⁺ release and actin-myosin sliding.',
+    steps: [
+      '1. Neuromuscular Junction: ACh binds nicotinic Nm receptors, depolarizing the sarcolemma.',
+      '2. Ca²⁺ Release: T-tubules trigger sarcoplasmic reticulum Ca²⁺ release; Ca²⁺ binds troponin.',
+      '3. Cross-Bridge Sliding: ATP-powered myosin heads pull actin filaments inward, shortening the muscle belly.',
+    ],
+    bpharmNote: 'Non-depolarizing neuromuscular blockers (vecuronium) competitively antagonize ACh at Nm receptors during surgery.',
+    disclaimer: 'Macroscopic muscle contraction demonstration; sarcomere cross-bridge cycling occurs at nanometer scale.',
+  },
+];
+
+// ---------------------------------------------------------------------------
+// PATHOLOGY LABORATORY (8 Normal vs Affected Comparisons)
+// ---------------------------------------------------------------------------
+export interface PathologyCase {
+  id: string;
+  title: string;
+  organId: OrganSystemId;
+  targetPartId: string;
+  normalSummary: string;
+  affectedChanges: string;
+  physiologicalConsequences: string;
+  bpharmRelevance: string;
+  disclaimer: string;
+}
+
+export const PATHOLOGY_CASES: PathologyCase[] = [
+  {
+    id: 'atherosclerosis',
+    title: 'Atherosclerosis',
+    organId: 'heart',
+    targetPartId: 'heart_aorta',
+    normalSummary: 'Smooth, compliant arterial intima with wide unobstructed lumen allowing laminar blood flow.',
+    affectedChanges: 'Subendothelial LDL lipid accumulation, foam-cell macrophages, and fibrous-calcific plaque narrowing the lumen.',
+    physiologicalConsequences: 'Increased systemic vascular resistance, systolic hypertension, and downstream tissue ischemia.',
+    bpharmRelevance: 'HMG-CoA reductase inhibitors (atorvastatin) lower LDL; antiplatelets (aspirin) prevent plaque-rupture thrombosis.',
+    disclaimer: 'Educational visual comparison only; not a diagnostic or angiographic tool.',
+  },
+  {
+    id: 'myocardial_infarction',
+    title: 'Myocardial Infarction',
+    organId: 'heart',
+    targetPartId: 'heart_ventricles',
+    normalSummary: 'Well-perfused pink-red ventricular myocardium contracting synchronously with normal ejection fraction.',
+    affectedChanges: 'Acute coronary occlusion produces a pale-necrotic ischemic zone in the anterior left ventricular wall and apex.',
+    physiologicalConsequences: 'Loss of contractile myocytes reduces stroke volume, triggers arrhythmias, and risks cardiogenic shock.',
+    bpharmRelevance: 'Acute MONA-B therapy (morphine, oxygen if hypoxic, nitrates, aspirin, β-blockers) + thrombolytics/PCI.',
+    disclaimer: 'Simplified ischemic-zone visualization for B.Pharm study; not for clinical diagnosis.',
+  },
+  {
+    id: 'pneumonia',
+    title: 'Pneumonia (Alveolar Consolidation)',
+    organId: 'lungs',
+    targetPartId: 'lung_right',
+    normalSummary: 'Air-filled, spongy pink pulmonary lobes with clear alveolar-capillary diffusion.',
+    affectedChanges: 'Bacterial/viral inflammation fills lower-lobe alveoli with purulent fluid exudate and neutrophils (consolidation).',
+    physiologicalConsequences: 'Ventilation-perfusion (V/Q) mismatch, hypoxemia, tachypnea, and reduced lung compliance.',
+    bpharmRelevance: 'Empiric β-lactam + macrolide antibiotics (amoxicillin-clavulanate + azithromycin) target causative pathogens.',
+    disclaimer: 'Educational lobe consolidation overlay; not a radiographic diagnostic tool.',
+  },
+  {
+    id: 'emphysema',
+    title: 'Emphysema (COPD)',
+    organId: 'lungs',
+    targetPartId: 'lung_left',
+    normalSummary: 'Elastic alveolar septa maintaining patent small airways and normal diaphragmatic dome.',
+    affectedChanges: 'Elastase-mediated destruction of alveolar walls causes hyperinflated airspaces, air trapping, and flattened diaphragm.',
+    physiologicalConsequences: 'Loss of gas-exchange surface area, reduced elastic recoil, and chronic CO₂ retention.',
+    bpharmRelevance: 'Long-acting bronchodilators (tiotropium, formoterol) and smoking cessation slow progression.',
+    disclaimer: 'Conceptual hyperinflation model; spirometry (FEV₁/FVC) is required clinically.',
+  },
+  {
+    id: 'fatty_liver',
+    title: 'Fatty Liver (Hepatic Steatosis)',
+    organId: 'liver',
+    targetPartId: 'liver_right_lobe',
+    normalSummary: 'Smooth, mahogany-red hepatic parenchyma with normal lobular architecture.',
+    affectedChanges: 'Hepatomegaly with diffuse yellowish-tan triglyceride vacuole accumulation inside hepatocytes.',
+    physiologicalConsequences: 'Impaired insulin sensitivity, elevated transaminases, and potential progression to steatohepatitis/cirrhosis.',
+    bpharmRelevance: 'Altered hepatic CYP450 clearance and risk of drug-induced liver injury (DILI); lifestyle + GLP-1/pioglitazone.',
+    disclaimer: 'Educational steatosis visualization; clinical grading requires ultrasound/elastography.',
+  },
+  {
+    id: 'kidney_stones',
+    title: 'Kidney Stones (Nephrolithiasis)',
+    organId: 'kidneys',
+    targetPartId: 'ureters',
+    normalSummary: 'Clear renal calyces and unobstructed ureters permitting smooth peristaltic urine flow.',
+    affectedChanges: 'Crystalline calcium oxalate calculi lodged at the ureteropelvic junction and distal ureter.',
+    physiologicalConsequences: 'Proximal hydronephrosis, intense renal colic, hematuria, and acute post-renal GFR drop.',
+    bpharmRelevance: 'NSAIDs (ketorolac) for colic pain, α₁-blockers (tamsulosin) for expulsion, potassium citrate for prevention.',
+    disclaimer: 'Simplified stone-localization model for anatomy students; not a CT scan.',
+  },
+  {
+    id: 'osteoporosis',
+    title: 'Osteoporosis',
+    organId: 'body',
+    targetPartId: 'skeletal_thorax',
+    normalSummary: 'Dense cortical bone and interconnected trabecular plates withstanding axial compressive loads.',
+    affectedChanges: 'Osteoclastic resorption outpaces osteoblastic formation, thinning trabeculae and creating porous, fragile bone.',
+    physiologicalConsequences: 'Markedly elevated risk of vertebral compression, hip, and wrist fragility fractures.',
+    bpharmRelevance: 'Bisphosphonates (alendronate), denosumab, calcium + vitamin D₃ supplementation.',
+    disclaimer: 'Visual bone-density contrast for education; clinical diagnosis uses DEXA T-scores.',
+  },
+  {
+    id: 'diabetes_complications',
+    title: 'Diabetes Microvascular Complications',
+    organId: 'kidneys',
+    targetPartId: 'kidney_left',
+    normalSummary: 'Intact glomerular basement membrane and healthy peripheral/retinal microvessels.',
+    affectedChanges: 'Chronic hyperglycemia drives non-enzymatic glycation, glomerular hypertrophy, and microvascular thickening.',
+    physiologicalConsequences: 'Diabetic nephropathy (microalbuminuria → CKD), retinopathy, and peripheral neuropathy.',
+    bpharmRelevance: 'Metformin, SGLT2 inhibitors (empagliflozin), and ACE inhibitors provide renoprotection.',
+    disclaimer: 'Educational organ-level summary; not a clinical risk calculator.',
+  },
+];
+
+// ---------------------------------------------------------------------------
+// LEARNING & ASSESSMENT BANK (MCQ, 3D Identification, Practical)
+// ---------------------------------------------------------------------------
+export type QuizDifficulty = 'foundation' | 'intermediate' | 'practical';
+
+export interface McqQuestion {
+  id: string;
+  difficulty: QuizDifficulty;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
+export interface IdentificationTask {
+  id: string;
+  difficulty: QuizDifficulty;
+  organId: OrganSystemId;
+  prompt: string;
+  targetPartId: string;
+  hint: string;
+}
+
+export const MCQ_BANK: McqQuestion[] = [
+  {
+    id: 'q1',
+    difficulty: 'foundation',
+    question: 'Which heart chamber has the thickest myocardium to pump blood into the systemic circulation?',
+    options: ['Right Atrium', 'Right Ventricle', 'Left Atrium', 'Left Ventricle'],
+    correctIndex: 3,
+    explanation: 'The left ventricle generates ~120 mmHg systolic pressure to perfuse the entire systemic circuit.',
+  },
+  {
+    id: 'q2',
+    difficulty: 'foundation',
+    question: 'How many lobes does the human right lung possess?',
+    options: ['Two lobes', 'Three lobes', 'Four lobes', 'One unified lobe'],
+    correctIndex: 1,
+    explanation: 'The right lung has 3 lobes (superior, middle, inferior), whereas the left lung has 2 lobes and a cardiac notch.',
+  },
+  {
+    id: 'q3',
+    difficulty: 'foundation',
+    question: 'Which layer of the skin is the rate-limiting barrier for transdermal drug patches?',
+    options: ['Hypodermis', 'Reticular Dermis', 'Stratum Corneum (Epidermis)', 'Subcutaneous Fascia'],
+    correctIndex: 2,
+    explanation: 'The lipid-rich stratum corneum of the epidermis governs passive transdermal drug permeation.',
+  },
+  {
+    id: 'q4',
+    difficulty: 'intermediate',
+    question: 'During which phase of the cardiac cycle does coronary artery perfusion predominantly occur?',
+    options: ['Atrial systole', 'Isovolumetric contraction', 'Ventricular diastole', 'Rapid ejection'],
+    correctIndex: 2,
+    explanation: 'During ventricular diastole, myocardial wall tension drops, allowing aortic recoil to perfuse coronary vessels.',
+  },
+  {
+    id: 'q5',
+    difficulty: 'intermediate',
+    question: 'Why does oral propranolol have low bioavailability (~25%) compared to IV administration?',
+    options: [
+      'Poor gastric dissolution',
+      'Extensive hepatic first-pass metabolism',
+      'Rapid renal glomerular filtration',
+      'Binding to gastric mucin',
+    ],
+    correctIndex: 1,
+    explanation: 'Portal venous blood carries absorbed oral drugs directly to hepatocytes, where CYP450 enzymes metabolize a large fraction.',
+  },
+  {
+    id: 'q6',
+    difficulty: 'intermediate',
+    question: 'Which inner ear structure detects angular acceleration of the head?',
+    options: ['Cochlea', 'Tympanic membrane', 'Semicircular canals', 'Eustachian tube'],
+    correctIndex: 2,
+    explanation: 'The three orthogonal semicircular canals sense rotational head movements, while the cochlea transduces sound.',
+  },
+  {
+    id: 'q7',
+    difficulty: 'practical',
+    question: 'A patient on gentamicin develops tinnitus and balance issues. Which anatomical structure is most affected?',
+    options: ['Medullary pyramids', 'Cochlear & vestibular hair cells', 'Thoracic diaphragm', 'Brunner’s glands'],
+    correctIndex: 1,
+    explanation: 'Aminoglycosides are classic ototoxins that damage inner-ear cochlear and vestibular hair cells.',
+  },
+  {
+    id: 'q8',
+    difficulty: 'practical',
+    question: 'Where do enteric-coated tablets dissolve to protect the gastric mucosa from NSAIDs or acid-labile drugs?',
+    options: ['Esophagus (pH 6.8)', 'Stomach fundus (pH 1.8)', 'Duodenum / Small intestine (pH 6.0–7.4)', 'Rectum'],
+    correctIndex: 2,
+    explanation: 'Enteric polymers remain intact in acidic gastric juice (pH < 3) and dissolve in the alkaline duodenum/jejunum.',
+  },
+  {
+    id: 'q9',
+    difficulty: 'practical',
+    question: 'In diabetic nephropathy, ACE inhibitors protect nephrons primarily by:',
+    options: [
+      'Constricting the afferent arteriole',
+      'Dilating the efferent arteriole to lower glomerular pressure',
+      'Blocking NKCC2 in the loop of Henle',
+      'Increasing aldosterone secretion',
+    ],
+    correctIndex: 1,
+    explanation: 'Angiotensin II preferentially constricts the efferent arteriole; ACE inhibitors relax it, reducing hyperfiltration injury.',
+  },
+];
+
+export const IDENTIFICATION_TASKS: IdentificationTask[] = [
+  {
+    id: 'id_1',
+    difficulty: 'foundation',
+    organId: 'heart',
+    prompt: 'Click on the Aortic Arch — the primary elastic artery leaving the left ventricle.',
+    targetPartId: 'heart_aorta',
+    hint: 'Look at the curved red arch at the top of the heart with three superior branches.',
+  },
+  {
+    id: 'id_2',
+    difficulty: 'foundation',
+    organId: 'brain',
+    prompt: 'Click on the Cerebellum — the striated structure coordinating balance and posture.',
+    targetPartId: 'brain_cerebellum',
+    hint: 'Located posteriorly beneath the occipital lobes.',
+  },
+  {
+    id: 'id_3',
+    difficulty: 'intermediate',
+    organId: 'brain',
+    prompt: 'Click on the Corpus Callosum (use Explode if needed to see it clearly).',
+    targetPartId: 'brain_corpus_callosum',
+    hint: 'C-shaped white-matter bridge between the left and right hemispheres.',
+  },
+  {
+    id: 'id_4',
+    difficulty: 'intermediate',
+    organId: 'lungs',
+    prompt: 'Click on the Thoracic Diaphragm — the primary muscle of inspiration.',
+    targetPartId: 'lung_diaphragm',
+    hint: 'Dome-shaped muscular sheet at the base of the lungs.',
+  },
+  {
+    id: 'id_5',
+    difficulty: 'practical',
+    organId: 'liver',
+    prompt: 'Click on the Gallbladder — the green sac storing concentrated bile.',
+    targetPartId: 'gallbladder',
+    hint: 'Nestled beneath the right hepatic lobe.',
+  },
+  {
+    id: 'id_6',
+    difficulty: 'practical',
+    organId: 'kidneys',
+    prompt: 'Click on the Adrenal Glands — the endocrine caps atop the kidneys.',
+    targetPartId: 'adrenal_glands',
+    hint: 'Yellowish pyramidal glands on the superior poles of both kidneys.',
+  },
+];
