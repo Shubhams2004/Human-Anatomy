@@ -2,15 +2,18 @@ import * as THREE from 'three';
 
 export interface ProceduralTextureSet {
   myocardiumMap: THREE.CanvasTexture;
-  myocardiumBump: THREE.CanvasTexture;
+  myocardiumNormal: THREE.CanvasTexture;
   brainMap: THREE.CanvasTexture;
-  brainBump: THREE.CanvasTexture;
-  cerebellumBump: THREE.CanvasTexture;
+  brainNormal: THREE.CanvasTexture;
+  cerebellumNormal: THREE.CanvasTexture;
   lungMap: THREE.CanvasTexture;
-  lungBump: THREE.CanvasTexture;
+  lungNormal: THREE.CanvasTexture;
   liverMap: THREE.CanvasTexture;
   stomachMap: THREE.CanvasTexture;
   kidneyMap: THREE.CanvasTexture;
+  boneMap: THREE.CanvasTexture;
+  muscleMap: THREE.CanvasTexture;
+  muscleNormal: THREE.CanvasTexture;
   contactShadowMap: THREE.CanvasTexture;
   dispose: () => void;
 }
@@ -39,7 +42,55 @@ function finalizeTexture(
   return tex;
 }
 
-// Deterministic pseudo-random for clean repeatable textures
+/** Converts a grayscale height canvas into a tangent-space RGB normal map via Sobel filter */
+function heightCanvasToNormalTexture(
+  heightCanvas: HTMLCanvasElement,
+  strength: number,
+  anisotropy: number,
+  repeat = 1,
+): THREE.CanvasTexture {
+  const w = heightCanvas.width;
+  const h = heightCanvas.height;
+  const hCtx = heightCanvas.getContext('2d')!;
+  const src = hCtx.getImageData(0, 0, w, h).data;
+
+  const [nCanvas, nCtx] = makeCanvas(w);
+  const dstImg = nCtx.createImageData(w, h);
+  const dst = dstImg.data;
+
+  const sample = (x: number, y: number) => {
+    const wx = ((x % w) + w) % w;
+    const wy = ((y % h) + h) % h;
+    return src[(wy * w + wx) * 4] / 255;
+  };
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const tl = sample(x - 1, y - 1);
+      const t = sample(x, y - 1);
+      const tr = sample(x + 1, y - 1);
+      const l = sample(x - 1, y);
+      const r = sample(x + 1, y);
+      const bl = sample(x - 1, y + 1);
+      const b = sample(x, y + 1);
+      const br = sample(x + 1, y + 1);
+
+      const dx = (tr + 2 * r + br - (tl + 2 * l + bl)) * strength;
+      const dy = (bl + 2 * b + br - (tl + 2 * t + tr)) * strength;
+      const dz = 1.0;
+      const len = Math.hypot(dx, dy, dz);
+
+      const idx = (y * w + x) * 4;
+      dst[idx] = Math.round(((-dx / len) * 0.5 + 0.5) * 255);
+      dst[idx + 1] = Math.round(((-dy / len) * 0.5 + 0.5) * 255);
+      dst[idx + 2] = Math.round(((dz / len) * 0.5 + 0.5) * 255);
+      dst[idx + 3] = 255;
+    }
+  }
+  nCtx.putImageData(dstImg, 0, 0);
+  return finalizeTexture(nCanvas, false, anisotropy, repeat);
+}
+
 function mulberry32(seed: number) {
   let a = seed;
   return () => {
@@ -51,136 +102,153 @@ function mulberry32(seed: number) {
   };
 }
 
-export function createAnatomicalTextures(
-  maxAnisotropy: number,
-): ProceduralTextureSet {
+export function createAnatomicalTextures(maxAnisotropy: number): ProceduralTextureSet {
   const aniso = Math.min(maxAnisotropy || 4, 8);
   const rand = mulberry32(4219);
 
-  // 1. Myocardium (striated cardiac muscle + subtle capillary branching)
+  // 1. Myocardium (Rich cardiac muscle fibers + capillary web)
   const [myoC, myoCtx] = makeCanvas(512);
-  myoCtx.fillStyle = '#9c2c38';
+  const [myoHC, myoHCtx] = makeCanvas(512);
+  myoCtx.fillStyle = '#992632';
   myoCtx.fillRect(0, 0, 512, 512);
-  for (let i = 0; i < 420; i++) {
+  myoHCtx.fillStyle = '#808080';
+  myoHCtx.fillRect(0, 0, 512, 512);
+
+  for (let i = 0; i < 650; i++) {
     const y = rand() * 512;
+    const wave = (rand() - 0.5) * 20;
     myoCtx.strokeStyle =
-      rand() > 0.5 ? 'rgba(130, 24, 38, 0.25)' : 'rgba(195, 72, 82, 0.16)';
-    myoCtx.lineWidth = 1 + rand() * 2.5;
+      rand() > 0.45 ? 'rgba(122, 18, 30, 0.32)' : 'rgba(205, 78, 86, 0.22)';
+    myoCtx.lineWidth = 1 + rand() * 2.4;
     myoCtx.beginPath();
     myoCtx.moveTo(0, y);
-    myoCtx.bezierCurveTo(
-      170,
-      y + (rand() - 0.5) * 18,
-      340,
-      y + (rand() - 0.5) * 18,
-      512,
-      y,
-    );
+    myoCtx.bezierCurveTo(170, y + wave, 340, y - wave, 512, y);
     myoCtx.stroke();
-  }
-  // Subtle epicardial fat / vessels
-  for (let i = 0; i < 24; i++) {
-    myoCtx.strokeStyle = 'rgba(218, 175, 130, 0.14)';
-    myoCtx.lineWidth = 2 + rand() * 3;
-    myoCtx.beginPath();
-    const x = rand() * 512;
-    myoCtx.moveTo(x, 0);
-    myoCtx.quadraticCurveTo(x + (rand() - 0.5) * 60, 256, x + (rand() - 0.5) * 40, 512);
-    myoCtx.stroke();
+
+    myoHCtx.strokeStyle =
+      rand() > 0.5 ? 'rgba(215, 215, 215, 0.3)' : 'rgba(45, 45, 45, 0.3)';
+    myoHCtx.lineWidth = 1 + rand() * 2;
+    myoHCtx.beginPath();
+    myoHCtx.moveTo(0, y);
+    myoHCtx.bezierCurveTo(170, y + wave, 340, y - wave, 512, y);
+    myoHCtx.stroke();
   }
   const myocardiumMap = finalizeTexture(myoC, true, aniso, 2);
+  const myocardiumNormal = heightCanvasToNormalTexture(myoHC, 2.2, aniso, 2);
 
-  const [myoBC, myoBCtx] = makeCanvas(512);
-  myoBCtx.fillStyle = '#808080';
-  myoBCtx.fillRect(0, 0, 512, 512);
-  for (let i = 0; i < 400; i++) {
-    const y = rand() * 512;
-    myoBCtx.strokeStyle =
-      rand() > 0.5 ? 'rgba(210,210,210,0.22)' : 'rgba(55,55,55,0.22)';
-    myoBCtx.lineWidth = 1 + rand() * 2;
-    myoBCtx.beginPath();
-    myoBCtx.moveTo(0, y);
-    myoBCtx.lineTo(512, y + (rand() - 0.5) * 12);
-    myoBCtx.stroke();
+  // 2. Skeletal Muscle Striation (Deep red fascicles + fine white perimysium)
+  const [musC, musCtx] = makeCanvas(512);
+  const [musHC, musHCtx] = makeCanvas(512);
+  musCtx.fillStyle = '#a83636';
+  musCtx.fillRect(0, 0, 512, 512);
+  musHCtx.fillStyle = '#808080';
+  musHCtx.fillRect(0, 0, 512, 512);
+  for (let i = 0; i < 700; i++) {
+    const x = rand() * 512;
+    const isFascia = rand() > 0.88;
+    musCtx.strokeStyle = isFascia
+      ? 'rgba(235, 210, 200, 0.24)'
+      : rand() > 0.5
+        ? 'rgba(130, 28, 28, 0.34)'
+        : 'rgba(198, 72, 68, 0.24)';
+    musCtx.lineWidth = isFascia ? 1.2 : 1.5 + rand() * 2.5;
+    musCtx.beginPath();
+    musCtx.moveTo(x, 0);
+    musCtx.quadraticCurveTo(x + (rand() - 0.5) * 14, 256, x, 512);
+    musCtx.stroke();
+
+    musHCtx.strokeStyle = rand() > 0.5 ? 'rgba(220,220,220,0.28)' : 'rgba(40,40,40,0.28)';
+    musHCtx.lineWidth = 1.5 + rand() * 2;
+    musHCtx.beginPath();
+    musHCtx.moveTo(x, 0);
+    musHCtx.lineTo(x, 512);
+    musHCtx.stroke();
   }
-  const myocardiumBump = finalizeTexture(myoBC, false, aniso, 2);
+  const muscleMap = finalizeTexture(musC, true, aniso, 2);
+  const muscleNormal = heightCanvasToNormalTexture(musHC, 2.6, aniso, 2);
 
-  // 2. Brain Gyri & Sulci (convoluted cortical folds)
+  // 3. Brain Gyri & Sulci (Deep cortical folds + sulcal AO + fine pial vessels)
   const [brC, brCtx] = makeCanvas(512);
-  const [brBC, brBCtx] = makeCanvas(512);
-  brCtx.fillStyle = '#d9a79c';
+  const [brHC, brHCtx] = makeCanvas(512);
+  brCtx.fillStyle = '#e0afa4';
   brCtx.fillRect(0, 0, 512, 512);
-  brBCtx.fillStyle = '#b8b8b8';
-  brBCtx.fillRect(0, 0, 512, 512);
+  brHCtx.fillStyle = '#d4d4d4';
+  brHCtx.fillRect(0, 0, 512, 512);
 
-  // Draw winding sulci grooves & raised gyri highlights
-  for (let i = 0; i < 95; i++) {
+  for (let i = 0; i < 120; i++) {
     let x = rand() * 512;
     let y = rand() * 512;
-    const steps = 10 + Math.floor(rand() * 12);
+    const steps = 12 + Math.floor(rand() * 14);
     let angle = rand() * Math.PI * 2;
 
     brCtx.beginPath();
-    brBCtx.beginPath();
+    brHCtx.beginPath();
     brCtx.moveTo(x, y);
-    brBCtx.moveTo(x, y);
-
+    brHCtx.moveTo(x, y);
     for (let s = 0; s < steps; s++) {
       angle += (rand() - 0.5) * 1.45;
-      const len = 14 + rand() * 16;
+      const len = 12 + rand() * 14;
       const nx = x + Math.cos(angle) * len;
       const ny = y + Math.sin(angle) * len;
       brCtx.quadraticCurveTo(x, y, nx, ny);
-      brBCtx.quadraticCurveTo(x, y, nx, ny);
+      brHCtx.quadraticCurveTo(x, y, nx, ny);
       x = nx;
       y = ny;
     }
-    // Sulcus dark groove
-    brCtx.strokeStyle = 'rgba(128, 66, 62, 0.58)';
-    brCtx.lineWidth = 5 + rand() * 4;
+    brCtx.strokeStyle = 'rgba(105, 48, 46, 0.65)';
+    brCtx.lineWidth = 6 + rand() * 4;
     brCtx.lineCap = 'round';
     brCtx.stroke();
 
-    // Inner bright gyrus ridge
-    brCtx.strokeStyle = 'rgba(236, 194, 184, 0.42)';
+    brCtx.strokeStyle = 'rgba(245, 208, 198, 0.45)';
     brCtx.lineWidth = 2.5;
     brCtx.stroke();
 
-    // Bump groove
-    brBCtx.strokeStyle = 'rgba(28, 28, 28, 0.78)';
-    brBCtx.lineWidth = 7 + rand() * 4;
-    brBCtx.lineCap = 'round';
-    brBCtx.stroke();
+    brHCtx.strokeStyle = 'rgba(18, 18, 18, 0.85)';
+    brHCtx.lineWidth = 8 + rand() * 4;
+    brHCtx.lineCap = 'round';
+    brHCtx.stroke();
+  }
+  // Fine pial capillaries
+  for (let i = 0; i < 45; i++) {
+    brCtx.strokeStyle = 'rgba(185, 45, 55, 0.25)';
+    brCtx.lineWidth = 1;
+    brCtx.beginPath();
+    const x = rand() * 512;
+    const y = rand() * 512;
+    brCtx.moveTo(x, y);
+    brCtx.bezierCurveTo(x + 30, y - 20, x - 20, y + 40, x + 45, y + 60);
+    brCtx.stroke();
   }
   const brainMap = finalizeTexture(brC, true, aniso, 2);
-  const brainBump = finalizeTexture(brBC, false, aniso, 2);
+  const brainNormal = heightCanvasToNormalTexture(brHC, 3.2, aniso, 2);
 
-  // 3. Cerebellum Folia (fine parallel horizontal ridges)
-  const [cerC, cerCtx] = makeCanvas(512);
-  cerCtx.fillStyle = '#909090';
-  cerCtx.fillRect(0, 0, 512, 512);
-  for (let y = 0; y < 512; y += 6) {
-    cerCtx.fillStyle = (y / 6) % 2 === 0 ? '#d8d8d8' : '#3a3a3a';
-    cerCtx.fillRect(0, y, 512, 3);
+  // 4. Cerebellum Folia
+  const [cerHC, cerHCtx] = makeCanvas(512);
+  cerHCtx.fillStyle = '#909090';
+  cerHCtx.fillRect(0, 0, 512, 512);
+  for (let y = 0; y < 512; y += 5) {
+    cerHCtx.fillStyle = (y / 5) % 2 === 0 ? '#e6e6e6' : '#2a2a2a';
+    cerHCtx.fillRect(0, y, 512, 2.5);
   }
-  const cerebellumBump = finalizeTexture(cerC, false, aniso, 2);
+  const cerebellumNormal = heightCanvasToNormalTexture(cerHC, 3.0, aniso, 2);
 
-  // 4. Lung Pleural Lobules (polygonal secondary pulmonary lobules)
+  // 5. Lung Pleural Lobules
   const [lgC, lgCtx] = makeCanvas(512);
-  const [lgBC, lgBCtx] = makeCanvas(512);
-  lgCtx.fillStyle = '#d48b8d';
+  const [lgHC, lgHCtx] = makeCanvas(512);
+  lgCtx.fillStyle = '#d6898d';
   lgCtx.fillRect(0, 0, 512, 512);
-  lgBCtx.fillStyle = '#a0a0a0';
-  lgBCtx.fillRect(0, 0, 512, 512);
-  for (let i = 0; i < 240; i++) {
+  lgHCtx.fillStyle = '#b0b0b0';
+  lgHCtx.fillRect(0, 0, 512, 512);
+  for (let i = 0; i < 280; i++) {
     const cx = rand() * 512;
     const cy = rand() * 512;
-    const r = 10 + rand() * 18;
-    lgCtx.strokeStyle = 'rgba(130, 74, 82, 0.25)';
-    lgCtx.lineWidth = 1.5;
+    const r = 9 + rand() * 16;
+    lgCtx.strokeStyle = 'rgba(115, 62, 72, 0.3)';
+    lgCtx.lineWidth = 1.4;
     lgCtx.beginPath();
     for (let k = 0; k < 6; k++) {
-      const a = (k / 6) * Math.PI * 2 + rand() * 0.25;
+      const a = (k / 6) * Math.PI * 2 + rand() * 0.2;
       const px = cx + Math.cos(a) * r;
       const py = cy + Math.sin(a) * r;
       if (k === 0) lgCtx.moveTo(px, py);
@@ -189,34 +257,32 @@ export function createAnatomicalTextures(
     lgCtx.closePath();
     lgCtx.stroke();
 
-    lgBCtx.strokeStyle = 'rgba(45,45,45,0.35)';
-    lgBCtx.lineWidth = 2;
-    lgBCtx.beginPath();
-    lgBCtx.arc(cx, cy, r * 0.85, 0, Math.PI * 2);
-    lgBCtx.stroke();
+    lgHCtx.strokeStyle = 'rgba(40,40,40,0.4)';
+    lgHCtx.lineWidth = 2;
+    lgHCtx.beginPath();
+    lgHCtx.arc(cx, cy, r * 0.85, 0, Math.PI * 2);
+    lgHCtx.stroke();
   }
   const lungMap = finalizeTexture(lgC, true, aniso, 2);
-  const lungBump = finalizeTexture(lgBC, false, aniso, 2);
+  const lungNormal = heightCanvasToNormalTexture(lgHC, 2.0, aniso, 2);
 
-  // 5. Liver Parenchyma (rich reddish-mahogany with subtle lobular speckle)
+  // 6. Liver, Stomach, Kidney, Bone
   const [lvC, lvCtx] = makeCanvas(512);
-  lvCtx.fillStyle = '#7b2c26';
+  lvCtx.fillStyle = '#792922';
   lvCtx.fillRect(0, 0, 512, 512);
-  for (let i = 0; i < 650; i++) {
-    lvCtx.fillStyle =
-      rand() > 0.5 ? 'rgba(98, 30, 26, 0.25)' : 'rgba(148, 62, 52, 0.16)';
+  for (let i = 0; i < 800; i++) {
+    lvCtx.fillStyle = rand() > 0.5 ? 'rgba(92, 26, 22, 0.28)' : 'rgba(155, 65, 55, 0.18)';
     lvCtx.beginPath();
-    lvCtx.arc(rand() * 512, rand() * 512, 2 + rand() * 6, 0, Math.PI * 2);
+    lvCtx.arc(rand() * 512, rand() * 512, 1.5 + rand() * 5, 0, Math.PI * 2);
     lvCtx.fill();
   }
   const liverMap = finalizeTexture(lvC, true, aniso, 2);
 
-  // 6. Stomach Serosa
   const [stC, stCtx] = makeCanvas(512);
-  stCtx.fillStyle = '#c8736a';
+  stCtx.fillStyle = '#cb756a';
   stCtx.fillRect(0, 0, 512, 512);
-  for (let i = 0; i < 180; i++) {
-    stCtx.strokeStyle = 'rgba(165, 76, 68, 0.22)';
+  for (let i = 0; i < 220; i++) {
+    stCtx.strokeStyle = 'rgba(160, 72, 62, 0.24)';
     stCtx.lineWidth = 2 + rand() * 3;
     const x = rand() * 512;
     stCtx.beginPath();
@@ -226,20 +292,26 @@ export function createAnatomicalTextures(
   }
   const stomachMap = finalizeTexture(stC, true, aniso, 1);
 
-  // 7. Kidney Cortex
   const [kdC, kdCtx] = makeCanvas(512);
-  kdCtx.fillStyle = '#8d3632';
+  kdCtx.fillStyle = '#8b332f';
   kdCtx.fillRect(0, 0, 512, 512);
-  for (let i = 0; i < 500; i++) {
-    kdCtx.fillStyle =
-      rand() > 0.5 ? 'rgba(115, 38, 34, 0.28)' : 'rgba(168, 72, 64, 0.18)';
+  for (let i = 0; i < 550; i++) {
+    kdCtx.fillStyle = rand() > 0.5 ? 'rgba(110, 34, 30, 0.28)' : 'rgba(170, 75, 65, 0.18)';
     kdCtx.beginPath();
     kdCtx.arc(rand() * 512, rand() * 512, 1.5 + rand() * 4, 0, Math.PI * 2);
     kdCtx.fill();
   }
   const kidneyMap = finalizeTexture(kdC, true, aniso, 1);
 
-  // 8. Soft Radial Contact Shadow
+  const [bnC, bnCtx] = makeCanvas(512);
+  bnCtx.fillStyle = '#e4dccb';
+  bnCtx.fillRect(0, 0, 512, 512);
+  for (let i = 0; i < 600; i++) {
+    bnCtx.fillStyle = rand() > 0.5 ? 'rgba(195, 182, 160, 0.22)' : 'rgba(245, 240, 230, 0.2)';
+    bnCtx.fillRect(rand() * 512, rand() * 512, 2 + rand() * 8, 1 + rand() * 2);
+  }
+  const boneMap = finalizeTexture(bnC, true, aniso, 1);
+
   const [shC, shCtx] = makeCanvas(256);
   const grad = shCtx.createRadialGradient(128, 128, 12, 128, 128, 124);
   grad.addColorStop(0, 'rgba(2, 6, 18, 0.65)');
@@ -251,27 +323,33 @@ export function createAnatomicalTextures(
 
   return {
     myocardiumMap,
-    myocardiumBump,
+    myocardiumNormal,
     brainMap,
-    brainBump,
-    cerebellumBump,
+    brainNormal,
+    cerebellumNormal,
     lungMap,
-    lungBump,
+    lungNormal,
     liverMap,
     stomachMap,
     kidneyMap,
+    boneMap,
+    muscleMap,
+    muscleNormal,
     contactShadowMap,
     dispose: () => {
       myocardiumMap.dispose();
-      myocardiumBump.dispose();
+      myocardiumNormal.dispose();
       brainMap.dispose();
-      brainBump.dispose();
-      cerebellumBump.dispose();
+      brainNormal.dispose();
+      cerebellumNormal.dispose();
       lungMap.dispose();
-      lungBump.dispose();
+      lungNormal.dispose();
       liverMap.dispose();
       stomachMap.dispose();
       kidneyMap.dispose();
+      boneMap.dispose();
+      muscleMap.dispose();
+      muscleNormal.dispose();
       contactShadowMap.dispose();
     },
   };
