@@ -43,6 +43,7 @@ interface AnatomyViewportProps {
   isolatedPartId: string | null;
   explodeAmount: number;
   viewMode: ViewMode;
+  cutaway: boolean;
   animatePhysiology: boolean;
   activePhysiologyId: string | null;
   physiologySpeed: number;
@@ -77,6 +78,7 @@ export const AnatomyViewport: React.FC<AnatomyViewportProps> = ({
   isolatedPartId,
   explodeAmount,
   viewMode,
+  cutaway,
   animatePhysiology,
   activePhysiologyId,
   physiologySpeed,
@@ -102,6 +104,7 @@ export const AnatomyViewport: React.FC<AnatomyViewportProps> = ({
     isolatedPartId,
     explodeAmount,
     viewMode,
+    cutaway,
     animatePhysiology,
     activePhysiologyId,
     physiologySpeed,
@@ -121,6 +124,7 @@ export const AnatomyViewport: React.FC<AnatomyViewportProps> = ({
     isolatedPartId,
     explodeAmount,
     viewMode,
+    cutaway,
     animatePhysiology,
     activePhysiologyId,
     physiologySpeed,
@@ -161,6 +165,7 @@ export const AnatomyViewport: React.FC<AnatomyViewportProps> = ({
     renderer.toneMappingExposure = 1.08;
     renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, 2));
     renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.localClippingEnabled = true;
     renderer.shadowMap.enabled = !isSoftwareGl;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.domElement.style.display = 'block';
@@ -279,6 +284,19 @@ export const AnatomyViewport: React.FC<AnatomyViewportProps> = ({
     flowParticles.visible = false;
     scene.add(flowParticles);
 
+    // Respiratory airflow particles (trachea -> bronchi -> lungs)
+    const airParticles = new THREE.Group();
+    const o2Mat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+    const airGeo = new THREE.SphereGeometry(0.026, 8, 8);
+    for (let i = 0; i < 14; i++) {
+      const m = new THREE.Mesh(airGeo, o2Mat);
+      airParticles.add(m);
+    }
+    airParticles.visible = false;
+    scene.add(airParticles);
+
+    const heartClipPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0.14);
+
     const materialSnapshots = new Map<THREE.Material, MaterialSnapshot>();
     Object.values(organGroups).forEach((grp) => {
       grp.visible = false;
@@ -364,6 +382,7 @@ export const AnatomyViewport: React.FC<AnatomyViewportProps> = ({
       const {
         activeOrgan: orgId,
         viewMode: mode,
+        cutaway: isCut,
         visibleSystems: visSys,
         transparentBody: transBody,
         isolatedPartId: isoId,
@@ -387,18 +406,33 @@ export const AnatomyViewport: React.FC<AnatomyViewportProps> = ({
           obj.visible = visSys[sysId] ?? true;
         }
 
+        // Cutaway visibility toggles
+        if (obj.userData.isHeartInterior) {
+          obj.visible = orgId === 'heart' && isCut;
+        } else if (obj.userData.isPericardium) {
+          obj.visible = !(orgId === 'heart' && isCut);
+        } else if (orgId === 'body' && obj.userData.isRightSideMuscle) {
+          obj.visible = !isCut && (visSys.muscular ?? true);
+        }
+
         // Isolate individual structure
         if (isoId && partId) {
           if (obj.userData.partId) {
             obj.visible = partId === isoId;
           }
-        } else if (orgId !== 'body' && obj.userData.partId) {
+        } else if (orgId !== 'body' && obj.userData.partId && !obj.userData.isHeartInterior && !obj.userData.isPericardium) {
           obj.visible = true;
         }
 
         const mesh = obj as THREE.Mesh;
         if (!mesh.isMesh || !mesh.material) return;
         const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+        const isHeartExteriorShell =
+          orgId === 'heart' &&
+          isCut &&
+          (partId === 'heart_ventricles' || partId === 'heart_atria') &&
+          !obj.parent?.userData.isHeartInterior;
+
         mats.forEach((m) => {
           const snap = materialSnapshots.get(m);
           const std = m as THREE.MeshStandardMaterial;
@@ -406,6 +440,8 @@ export const AnatomyViewport: React.FC<AnatomyViewportProps> = ({
 
           // Restore base color first
           std.color.copy(snap.color);
+          std.clippingPlanes = isHeartExteriorShell ? [heartClipPlane] : null;
+          if (isHeartExteriorShell) std.side = THREE.DoubleSide;
 
           // Pathology visual comparison
           if (activePathology && showAffected && partId === activePathology.targetPartId) {
@@ -427,6 +463,11 @@ export const AnatomyViewport: React.FC<AnatomyViewportProps> = ({
           } else if (mode === 'xray') {
             std.transparent = true;
             std.opacity = 0.34;
+            std.depthWrite = false;
+            std.wireframe = false;
+          } else if (orgId === 'lungs' && isCut && (partId === 'lung_right' || partId === 'lung_left')) {
+            std.transparent = true;
+            std.opacity = 0.24;
             std.depthWrite = false;
             std.wireframe = false;
           } else if (
@@ -634,6 +675,10 @@ export const AnatomyViewport: React.FC<AnatomyViewportProps> = ({
 
       const t = elapsed * speed;
       flowParticles.visible = animOn && physId === 'blood_circulation';
+      airParticles.visible =
+        animOn &&
+        orgId === 'lungs' &&
+        (physId === 'pulmonary_ventilation' || physId === 'gas_exchange');
 
       if (!animOn) {
         organGroups.heart.scale.setScalar(1);
@@ -665,13 +710,35 @@ export const AnatomyViewport: React.FC<AnatomyViewportProps> = ({
         });
       }
 
-      // Pulmonary ventilation / gas exchange
+      // Pulmonary ventilation / gas exchange + Diaphragm excursion + Airflow particles
       if (orgId === 'lungs' || orgId === 'body') {
         const breath = (Math.sin(t * 1.55) + 1) * 0.5;
-        const amp = physId === 'pulmonary_ventilation' ? 0.06 : 0.032;
+        const amp = physId === 'pulmonary_ventilation' ? 0.065 : 0.032;
         const base = orgId === 'body' ? 0.62 : 1;
         const target = orgId === 'body' ? bodyBuilt.lungs : organGroups.lungs;
         target.scale.set(base * (1 + breath * amp), base * (1 + breath * amp * 0.7), base * (1 + breath * amp * 1.1));
+
+        // Diaphragm descends on inhalation
+        target.traverse((o) => {
+          if (o.userData.isDiaphragm && o.userData.basePosition) {
+            o.position.y = (o.userData.basePosition as THREE.Vector3).y - breath * 0.14;
+          }
+        });
+
+        if (airParticles.visible) {
+          airParticles.children.forEach((p, idx) => {
+            const ph = (t * 0.75 + idx / 14) % 1;
+            const side = idx % 2 === 0 ? -1 : 1;
+            if (ph < 0.55) {
+              // Descending trachea
+              p.position.set(0, 1.38 - (ph / 0.55) * 1.05, 0);
+            } else {
+              // Branching into left/right bronchi
+              const b = (ph - 0.55) / 0.45;
+              p.position.set(side * b * 0.58, 0.33 - b * 0.35, 0.02);
+            }
+          });
+        }
       }
 
       // GI peristalsis
@@ -690,6 +757,13 @@ export const AnatomyViewport: React.FC<AnatomyViewportProps> = ({
       if (orgId === 'body' && physId === 'muscle_contraction') {
         const mWave = (Math.sin(t * 2.2) + 1) * 0.5;
         bodyBuilt.musclesGroup.scale.set(1 + mWave * 0.03, 1 - mWave * 0.015, 1 + mWave * 0.03);
+        bodyBuilt.musclesGroup.traverse((o) => {
+          const m = o as THREE.Mesh;
+          if (m.isMesh && m.material) {
+            (m.material as THREE.MeshStandardMaterial).emissive?.setHex(0xe11d48);
+            (m.material as THREE.MeshStandardMaterial).emissiveIntensity = mWave * 0.25;
+          }
+        });
       }
       if (orgId === 'body' && physId === 'nerve_impulse') {
         const nPulse = (Math.sin(t * 6) + 1) * 0.5;
@@ -809,7 +883,7 @@ export const AnatomyViewport: React.FC<AnatomyViewportProps> = ({
 
   useEffect(() => {
     sceneControlRef.current?.updateMaterials();
-  }, [activeOrgan, viewMode, visibleSystems, transparentBody, isolatedPartId, activePathologyId, pathologyShowAffected]);
+  }, [activeOrgan, viewMode, cutaway, visibleSystems, transparentBody, isolatedPartId, activePathologyId, pathologyShowAffected]);
 
   useEffect(() => {
     sceneControlRef.current?.setAutoRotate(autoRotate);

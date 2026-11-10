@@ -10,6 +10,7 @@ import {
   Play,
   RotateCcw,
   RotateCw,
+  Scissors,
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
@@ -22,6 +23,8 @@ interface ControlDockProps {
   onExplodeChange: (value: number) => void;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
+  cutaway: boolean;
+  onToggleCutaway: () => void;
   transparentBody: boolean;
   onToggleTransparentBody: () => void;
   showTransparentToggle: boolean;
@@ -46,6 +49,8 @@ export const ControlDock: React.FC<ControlDockProps> = ({
   onExplodeChange,
   viewMode,
   onViewModeChange,
+  cutaway,
+  onToggleCutaway,
   transparentBody,
   onToggleTransparentBody,
   showTransparentToggle,
@@ -139,6 +144,20 @@ export const ControlDock: React.FC<ControlDockProps> = ({
 
           {/* Playback & Visual Toggles */}
           <div className="flex items-center gap-1.5 flex-wrap">
+            <button
+              type="button"
+              onClick={onToggleCutaway}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                cutaway
+                  ? 'bg-amber-500/20 border-amber-400/50 text-amber-300'
+                  : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+              title="Coronal cross-section & peel outer layers"
+            >
+              <Scissors className="w-3.5 h-3.5" />
+              <span>Cutaway</span>
+            </button>
+
             {showTransparentToggle && (
               <button
                 type="button"

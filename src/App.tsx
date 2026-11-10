@@ -57,6 +57,7 @@ export default function App() {
 
   const [explodeAmount, setExplodeAmount] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>('anatomical');
+  const [cutaway, setCutaway] = useState(false);
   const [animatePhysiology, setAnimatePhysiology] = useState(!prefersReducedMotion);
   const [physiologySpeed, setPhysiologySpeed] = useState(1);
   const [activePhysiologyId, setActivePhysiologyId] = useState(PHYSIOLOGY_SIMS[0].id);
@@ -194,6 +195,7 @@ export default function App() {
         isolatedPartId={isolatedPartId}
         explodeAmount={explodeAmount}
         viewMode={viewMode}
+        cutaway={cutaway}
         animatePhysiology={animatePhysiology}
         activePhysiologyId={workspaceMode === 'physiology' ? activePhysiologyId : null}
         physiologySpeed={physiologySpeed}
@@ -379,6 +381,8 @@ export default function App() {
         onExplodeChange={setExplodeAmount}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        cutaway={cutaway}
+        onToggleCutaway={() => setCutaway((v) => !v)}
         transparentBody={transparentBody}
         onToggleTransparentBody={() => setTransparentBody((v) => !v)}
         showTransparentToggle={activeOrgan === 'body'}

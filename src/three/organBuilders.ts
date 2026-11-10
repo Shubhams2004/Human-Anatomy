@@ -328,6 +328,123 @@ export function buildHeartGroup(tex: ProceduralTextureSet): THREE.Group {
   registerPart(corGroup, 'heart_coronary', 'heart', new THREE.Vector3(0.05, -0.15, 0.6), 'cardiovascular');
   group.add(corGroup);
 
+  // Outer Fibrous Pericardium (peels away in Cutaway mode)
+  const pericardium = new THREE.Mesh(
+    sculptGeometry(new THREE.SphereGeometry(0.75, 40, 32), (v) => {
+      const ny = v.y / 0.75;
+      const taper = ny < 0 ? 1 - Math.pow(-ny, 1.35) * 0.56 : 1 - ny * 0.12;
+      v.x *= taper * 0.98;
+      v.z *= taper * 0.88;
+      v.y *= 1.24;
+      if (ny < 0) v.x += Math.pow(-ny, 1.4) * 0.27;
+    }),
+    new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color('#f1d5d8'),
+      roughness: 0.28,
+      transparent: true,
+      opacity: 0.14,
+      depthWrite: false,
+      clearcoat: 0.8,
+    }),
+  );
+  pericardium.position.set(0.05, -0.16, 0);
+  pericardium.userData.isPericardium = true;
+  group.add(pericardium);
+
+  // Internal Cardiac Chambers, Septum, Valves, Chordae Tendineae & Papillary Muscles (Revealed in Cutaway mode)
+  const interiorGroup = new THREE.Group();
+  interiorGroup.userData.isHeartInterior = true;
+  interiorGroup.visible = false;
+
+  const endocardiumMat = new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color('#7f1d28'),
+    roughness: 0.42,
+    clearcoat: 0.55,
+    side: THREE.DoubleSide,
+  });
+  const valveMat = new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color('#f3eee6'),
+    roughness: 0.3,
+    clearcoat: 0.45,
+    side: THREE.DoubleSide,
+  });
+  const chordaeMat = new THREE.MeshStandardMaterial({ color: 0xf5f0e6, roughness: 0.4 });
+  const papillaryMat = new THREE.MeshPhysicalMaterial({ color: 0xa6313e, roughness: 0.45 });
+
+  // Interventricular Septum
+  const septum = new THREE.Mesh(
+    sculptGeometry(new THREE.BoxGeometry(0.11, 1.18, 0.42, 6, 12, 6), (v) => {
+      v.x += Math.sin((v.y + 0.5) * 2.2) * 0.04;
+      if (v.y < -0.2) v.z *= 0.72;
+    }),
+    endocardiumMat,
+  );
+  septum.position.set(0.06, -0.24, -0.04);
+  septum.rotation.z = -0.16;
+  interiorGroup.add(septum);
+
+  // Left & Right Ventricular Cavity Linings + Trabeculae Carneae
+  [-1, 1].forEach((side) => {
+    const cavity = new THREE.Mesh(
+      new THREE.SphereGeometry(side === 1 ? 0.24 : 0.22, 24, 20),
+      endocardiumMat,
+    );
+    cavity.scale.set(0.78, 1.75, 0.75);
+    cavity.position.set(side === 1 ? 0.26 : -0.16, -0.26, -0.04);
+    cavity.rotation.z = -0.16;
+    interiorGroup.add(cavity);
+
+    // Papillary muscles
+    [-0.06, 0.06].forEach((pz) => {
+      const pap = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.22, 12), papillaryMat);
+      pap.position.set(side === 1 ? 0.26 : -0.16, -0.44, -0.02 + pz);
+      interiorGroup.add(pap);
+
+      // Chordae tendineae cords connecting papillary muscles to AV valve leaflets
+      [-0.03, 0.03].forEach((cx) => {
+        const chord = new THREE.Mesh(
+          new THREE.TubeGeometry(
+            new THREE.CatmullRomCurve3([
+              new THREE.Vector3(side === 1 ? 0.26 : -0.16, -0.34, -0.02 + pz),
+              new THREE.Vector3((side === 1 ? 0.24 : -0.18) + cx, -0.06, -0.02 + pz * 0.5),
+            ]),
+            8,
+            0.006,
+            6,
+            false,
+          ),
+          chordaeMat,
+        );
+        interiorGroup.add(chord);
+      });
+    });
+  });
+
+  // 4 Cardiac Valves (Tricuspid, Mitral, Pulmonary, Aortic)
+  const valvePositions: [number, number, number, number][] = [
+    [-0.2, 0.06, -0.02, 0.11], // Tricuspid
+    [0.22, 0.08, -0.04, 0.11], // Mitral
+    [-0.08, 0.26, 0.1, 0.085], // Pulmonary
+    [0.04, 0.24, 0.0, 0.09], // Aortic
+  ];
+  valvePositions.forEach(([vx, vy, vz, vr]) => {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(vr, 0.016, 8, 20), valveMat);
+    ring.rotation.x = Math.PI / 2;
+    ring.position.set(vx, vy, vz);
+    interiorGroup.add(ring);
+    for (let c = 0; c < 3; c++) {
+      const ang = (c / 3) * Math.PI * 2;
+      const cusp = new THREE.Mesh(new THREE.ConeGeometry(vr * 0.55, 0.06, 8), valveMat);
+      cusp.rotation.x = Math.PI;
+      cusp.position.set(vx + Math.cos(ang) * vr * 0.35, vy - 0.02, vz + Math.sin(ang) * vr * 0.35);
+      interiorGroup.add(cusp);
+    }
+  });
+
+  registerPart(interiorGroup, 'heart_ventricles', 'heart', new THREE.Vector3(0, -0.45, 0.25), 'cardiovascular');
+  interiorGroup.visible = false;
+  group.add(interiorGroup);
+
   return group;
 }
 
@@ -637,6 +754,37 @@ export function buildLungsGroup(tex: ProceduralTextureSet): THREE.Group {
   registerPart(leftLung, 'lung_left', 'lungs', new THREE.Vector3(0.55, 0, 0.1), 'respiratory');
   group.add(leftLung);
 
+  // Internal Secondary & Tertiary Bronchial Tree (revealed in Cutaway mode)
+  const treeGroup = new THREE.Group();
+  treeGroup.userData.isLungTree = true;
+  const alvMat = new THREE.MeshPhysicalMaterial({ color: 0xf4a8ae, roughness: 0.45 });
+  [-1, 1].forEach((side) => {
+    for (let b = 0; b < 5; b++) {
+      const yOff = 0.26 - b * 0.18;
+      const xReach = side * (0.55 + (b % 2) * 0.18);
+      const zReach = (b - 2) * 0.08;
+      const branch = new THREE.Mesh(
+        new THREE.TubeGeometry(
+          new THREE.CatmullRomCurve3([
+            new THREE.Vector3(side * 0.32, 0.04, 0),
+            new THREE.Vector3(side * 0.48, yOff * 0.6, zReach * 0.5),
+            new THREE.Vector3(xReach, yOff, zReach),
+          ]),
+          12,
+          0.024,
+          8,
+          false,
+        ),
+        bronchiMat,
+      );
+      const acinus = new THREE.Mesh(new THREE.SphereGeometry(0.065, 10, 8), alvMat);
+      acinus.position.set(xReach, yOff, zReach);
+      treeGroup.add(branch, acinus);
+    }
+  });
+  registerPart(treeGroup, 'lung_bronchi', 'lungs', new THREE.Vector3(0, 0.1, 0), 'respiratory');
+  group.add(treeGroup);
+
   const diaphragm = new THREE.Mesh(
     sculptGeometry(new THREE.SphereGeometry(1.15, 40, 20, 0, Math.PI * 2, 0, Math.PI * 0.42), (v) => {
       v.y *= 0.45;
@@ -646,7 +794,9 @@ export function buildLungsGroup(tex: ProceduralTextureSet): THREE.Group {
     diaphragmMat,
   );
   diaphragm.position.set(0, -1.06, 0);
+  diaphragm.userData.isDiaphragm = true;
   registerPart(diaphragm, 'lung_diaphragm', 'lungs', new THREE.Vector3(0, -0.55, 0), 'muscular');
+  diaphragm.userData.isDiaphragm = true;
   group.add(diaphragm);
 
   return group;
@@ -1143,15 +1293,20 @@ export function buildFullBodyAssembly(tex: ProceduralTextureSet): {
   skelGroup.add(cranium);
 
   const thoraxGroup = new THREE.Group();
-  // Segmented vertebral column
-  const spine = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.095, 3.0, 14), boneMat);
-  spine.position.set(0, 0.4, -0.45);
-  thoraxGroup.add(spine);
+  // Segmented vertebral column (16 vertebrae + spinous processes)
+  for (let v = 0; v < 16; v++) {
+    const vy = 1.65 - v * 0.17;
+    const vert = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.085, 0.12, 12), boneMat);
+    vert.position.set(0, vy, -0.45);
+    const spinous = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.07, 0.12), boneMat);
+    spinous.position.set(0, vy - 0.02, -0.54);
+    thoraxGroup.add(vert, spinous);
+  }
   // Sternum
   const sternum = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.88, 0.05), boneMat);
   sternum.position.set(0, 1.02, 0.5);
   thoraxGroup.add(sternum);
-  // Clavicles
+  // Clavicles & Scapulae
   [-1, 1].forEach((side) => {
     const clav = new THREE.Mesh(
       new THREE.TubeGeometry(
@@ -1163,7 +1318,11 @@ export function buildFullBodyAssembly(tex: ProceduralTextureSet): {
       ),
       boneMat,
     );
-    thoraxGroup.add(clav);
+    const scapula = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.52, 4), boneMat);
+    scapula.scale.set(1, 1, 0.18);
+    scapula.rotation.z = Math.PI + side * 0.15;
+    scapula.position.set(side * 0.54, 1.18, -0.48);
+    thoraxGroup.add(clav, scapula);
   });
   // 10 pairs of curved ribs
   for (let i = 0; i < 10; i++) {
@@ -1189,19 +1348,25 @@ export function buildFullBodyAssembly(tex: ProceduralTextureSet): {
   pelvis.position.set(0, -1.12, -0.05);
   thoraxGroup.add(pelvis);
   [-1, 1].forEach((side) => {
-    const humerus = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.05, 1.3, 12), boneMat);
-    humerus.position.set(side * 1.15, 0.85, -0.05);
+    const humerus = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.05, 1.15, 12), boneMat);
+    humerus.position.set(side * 1.12, 0.92, -0.05);
     humerus.rotation.z = side * 0.08;
-    const femur = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.065, 1.7, 12), boneMat);
-    femur.position.set(side * 0.42, -2.05, 0);
-    thoraxGroup.add(humerus, femur);
+    const radius = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.032, 0.95, 10), boneMat);
+    radius.position.set(side * 1.2, -0.08, 0.02);
+    const ulna = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.028, 0.95, 10), boneMat);
+    ulna.position.set(side * 1.13, -0.08, -0.04);
+    const femur = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.065, 1.45, 12), boneMat);
+    femur.position.set(side * 0.42, -1.92, 0);
+    const tibia = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.045, 1.3, 10), boneMat);
+    tibia.position.set(side * 0.42, -3.25, 0.02);
+    thoraxGroup.add(humerus, radius, ulna, femur, tibia);
   });
   registerPart(thoraxGroup, 'skeletal_thorax', 'lungs', new THREE.Vector3(0, 0, -0.45), 'skeletal');
   skelGroup.add(thoraxGroup);
   tagSystem(skelGroup, 'skeletal');
   root.add(skelGroup);
 
-  // 2. MUSCULAR SYSTEM (Striated Muscle Normal Map + Abs + Tendons)
+  // 2. MUSCULAR SYSTEM (Striated Muscle Normal Map + Obliques + Calves + Tendons)
   const musclesGroup = new THREE.Group();
   const muscMat = new THREE.MeshPhysicalMaterial({
     color: 0xb03a3a,
@@ -1213,29 +1378,52 @@ export function buildFullBodyAssembly(tex: ProceduralTextureSet): {
   });
   const tendonMat = new THREE.MeshPhysicalMaterial({ color: 0xe2dad2, roughness: 0.35, clearcoat: 0.3 });
   [-1, 1].forEach((side) => {
+    const sideGrp = new THREE.Group();
+    if (side === -1) sideGrp.userData.isRightSideMuscle = true;
+
     const pec = new THREE.Mesh(new THREE.SphereGeometry(0.42, 24, 18), muscMat);
     pec.scale.set(1.05, 0.68, 0.45);
     pec.position.set(side * 0.36, 1.25, 0.44);
+    const trap = new THREE.Mesh(new THREE.SphereGeometry(0.32, 18, 14), muscMat);
+    trap.scale.set(1.1, 0.65, 0.5);
+    trap.position.set(side * 0.38, 1.62, -0.22);
+    const oblique = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.2, 0.9, 14), muscMat);
+    oblique.scale.set(0.85, 1, 0.65);
+    oblique.position.set(side * 0.56, 0.24, 0.16);
     const delt = new THREE.Mesh(new THREE.SphereGeometry(0.26, 20, 16), muscMat);
     delt.scale.set(0.85, 1.25, 0.85);
     delt.position.set(side * 1.12, 1.38, 0.02);
     const bicep = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 14), muscMat);
     bicep.scale.set(0.85, 2.8, 0.85);
     bicep.position.set(side * 1.16, 0.72, 0.06);
-    const quad = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.16, 1.5, 16), muscMat);
-    quad.position.set(side * 0.44, -2.0, 0.06);
+    const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.075, 0.9, 14), muscMat);
+    forearm.position.set(side * 1.18, -0.08, 0.02);
+    const quad = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.16, 1.4, 16), muscMat);
+    quad.position.set(side * 0.44, -1.92, 0.06);
+    const calf = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 14), muscMat);
+    calf.scale.set(0.9, 2.4, 1.0);
+    calf.position.set(side * 0.44, -3.1, -0.06);
     const patellaTendon = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.25, 0.08), tendonMat);
-    patellaTendon.position.set(side * 0.44, -2.75, 0.12);
+    patellaTendon.position.set(side * 0.44, -2.65, 0.12);
     // Rectus abdominis segments
     for (let r = 0; r < 3; r++) {
       const ab = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 12), muscMat);
       ab.scale.set(1.1, 0.85, 0.45);
       ab.position.set(side * 0.16, 0.58 - r * 0.26, 0.44);
-      musclesGroup.add(ab);
+      sideGrp.add(ab);
     }
-    musclesGroup.add(pec, delt, bicep, quad, patellaTendon);
+    sideGrp.add(pec, trap, oblique, delt, bicep, forearm, quad, calf, patellaTendon);
+    musclesGroup.add(sideGrp);
   });
   registerPart(musclesGroup, 'muscular_pectoral', 'heart', new THREE.Vector3(0, 0, 0.55), 'muscular');
+  // Re-preserve isRightSideMuscle on children of sideGrp
+  musclesGroup.children.forEach((sg) => {
+    if (sg.userData.isRightSideMuscle) {
+      sg.traverse((c) => {
+        c.userData.isRightSideMuscle = true;
+      });
+    }
+  });
   tagSystem(musclesGroup, 'muscular');
   root.add(musclesGroup);
 
