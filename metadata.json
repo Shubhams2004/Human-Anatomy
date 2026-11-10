@@ -1,0 +1,6 @@
+{
+  "name": "Human Anatomy 3D Atlas",
+  "description": "Interactive 3D human organ and anatomy explorer built with Three.js for medical and biology students, featuring pinch-to-zoom, rotational inspection, exploded layers, and X-ray views.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
